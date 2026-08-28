@@ -167,6 +167,19 @@ h3 {
   transition-duration: 0.01s;
 }
 
+/*
+ * Content screens sit on their own ground. Only the menu and the showcase let
+ * the 3D scene show through — everywhere else it just makes text harder to
+ * read.
+ */
+#shop,
+#career,
+#garage,
+#challenges,
+#settings {
+  background: linear-gradient(180deg, #080b11 0%, #05070a 62%);
+}
+
 .screen-scroll {
   flex: 1;
   overflow-y: auto;

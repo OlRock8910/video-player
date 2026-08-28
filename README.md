@@ -54,12 +54,19 @@ Requires JDK 21 and the Android SDK (compileSdk 34, minSdk 22). Set
 `ANDROID_HOME`, or open the `android/` folder in Android Studio via
 `npm run android:open`.
 
-### With CI
+### With CI (no local toolchain needed)
 
 `.github/workflows/android.yml` runs the typecheck, unit tests and browser
-playthrough, then builds both APKs and uploads them as the `pc-builder-apk`
-artifact. Push the branch, open the run, and download the APK from there — no
-local Android toolchain needed.
+playthrough, then builds both APKs and uploads them as the **`pc-builder-apk`**
+artifact.
+
+1. Push the branch.
+2. Open **Actions → Build Android APK** and pick the run.
+3. Download `pc-builder-apk` from the run's Artifacts section.
+4. Unzip it and install `pc-builder-debug.apk` on the phone (allow installs
+   from unknown sources).
+
+The whole run takes about five minutes.
 
 > The release APK is signed with the debug keystore so CI produces something
 > installable. Add a real keystore and a `signingConfigs.release` block in
