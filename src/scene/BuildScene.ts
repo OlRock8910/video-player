@@ -285,6 +285,7 @@ export class BuildScene {
       const targetQuat = new THREE.Quaternion().setFromEuler(anchor.rotation);
       this.tween(built.group, anchor.position.clone(), targetQuat, 0.42, () => {
         this.spawnScrews(record, component, anchor);
+        this.mountRadiator(built, anchor);
         this.rgb.register(built.group);
         onSeated?.();
       });
@@ -293,6 +294,28 @@ export class BuildScene {
       onSeated?.();
     }
     return record;
+  }
+
+  /**
+   * An AIO's radiator is built as a child of the pump because that is how the
+   * part arrives in the box, but it physically bolts to the case roof. The
+   * chassis dimensions only exist here, so the final placement happens here
+   * too: lay the radiator flat, length along the case depth, under the roof.
+   */
+  private mountRadiator(built: BuiltPart, anchor: SlotAnchor): void {
+    const rad = built.group.getObjectByName('radiator');
+    if (!rad || !this.layout) return;
+    const { height, depth } = this.layout;
+
+    // The cooler group is yawed 90°, so a local Z-roll lays the radiator flat
+    // with its length running front to back.
+    rad.rotation.set(0, 0, Math.PI / 2);
+
+    // Convert the desired case-space position into the cooler's local space,
+    // which is the inverse of that yaw.
+    const target = new THREE.Vector3(0, height - mm(38), -depth * 0.04);
+    const d = target.clone().sub(anchor.position);
+    rad.position.set(d.z, d.y, -d.x);
   }
 
   /** Lay out the screws a part needs, proud and waiting to be driven (§7). */
@@ -633,7 +656,10 @@ export class BuildScene {
       (this.caseBuilt?.interior ?? this.root).add(built.group);
       const record: PlacedPart = { slot: part.slot, componentId: comp.id, built, screws: [] };
       this.placed.set(part.slot, record);
-      if (anchor) this.spawnScrews(record, comp, anchor);
+      if (anchor) {
+        this.spawnScrews(record, comp, anchor);
+        this.mountRadiator(built, anchor);
+      }
       // Restore how far the screws were driven.
       for (let i = 0; i < record.screws.length; i++) {
         if (i < part.screwsDriven) {
