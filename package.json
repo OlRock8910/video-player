@@ -14,9 +14,13 @@
     "android:open": "npx cap open android"
   },
   "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/haptics": "^6.0.2",
     "three": "0.171.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
     "@types/node": "^22.20.1",
     "@types/three": "0.171.0",
     "typescript": "5.7.2",
