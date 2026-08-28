@@ -136,23 +136,66 @@ async function main() {
   if (!/OPEN IT UP/.test(result)) throw new Error(`expected panel step, got "${result}"`);
   log('✓ advanced to panel step');
 
-  // Hold on each screw location around the case to back them out.
-  for (const [dx, dy] of [
-    [-0.16, -0.2],
-    [-0.16, 0.12],
-    [0.16, -0.2],
-    [0.16, 0.12],
-  ]) {
-    await page.mouse.move(box.x + box.width * (0.5 + dx), box.y + box.height * (0.42 + dy));
-    await page.mouse.down();
-    await page.waitForTimeout(1500);
-    await page.mouse.up();
-    await page.waitForTimeout(120);
-  }
-  await tap(page, 'Remove panel', { selector: '.tray-item', settle: 1400 });
+  // Project each panel screw to screen space and press-and-hold on it, so this
+  // exercises the real raycast path rather than guessing at coordinates.
+  const screwPoints = await page.evaluate(() => {
+    const scene = window.pcb.scene;
+    const cam = scene.cameraController.camera;
+    cam.updateMatrixWorld();
+    const pts = [];
+    // The menu keeps a hidden showpiece PC in the same scene graph, so only
+    // consider screws that are actually on screen.
+    const onScreen = (o) => {
+      for (let n = o; n; n = n.parent) if (!n.visible) return false;
+      return true;
+    };
+    scene.scene.traverse((o) => {
+      if (!o.name?.startsWith('panel-screw-') || !onScreen(o)) return;
+      // Clone an existing Vector3 to get the class without a THREE global.
+      const v = o.position.clone();
+      o.getWorldPosition(v);
+      v.project(cam);
+      pts.push({ name: o.name, x: v.x * 0.5 + 0.5, y: -v.y * 0.5 + 0.5 });
+    });
+    return pts;
+  });
+  if (screwPoints.length !== 4) throw new Error(`expected 4 panel screws, found ${screwPoints.length}`);
 
-  const stepNow = await page.locator('.step-label').textContent();
-  log(`  step after panel: ${stepNow}`);
+  // Driving a screw takes about a second of held finger at 60fps, and longer
+  // under CI's software renderer, so hold until it pops rather than guessing.
+  for (const p of screwPoints) {
+    // Skip screws facing away from the camera this frame.
+    if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1) continue;
+    await page.mouse.move(box.x + box.width * p.x, box.y + box.height * p.y);
+    await page.mouse.down();
+    for (let waited = 0; waited < 12000; waited += 400) {
+      await page.waitForTimeout(400);
+      const done = await page.evaluate(
+        (name) => window.pcb.panelScrewOut?.(Number(name.split('-').pop())) ?? false,
+        p.name
+      );
+      if (done) break;
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(160);
+  }
+
+  const screwsOut = await page.evaluate(() => window.pcb.panelScrewsRemoved?.() ?? null);
+  if (screwsOut !== true) throw new Error(`panel screws did not come out (got ${screwsOut})`);
+  log('✓ all four thumbscrews driven out');
+
+  await tap(page, 'Remove panel', { selector: '.tray-item', settle: 400 });
+  // The panel slides off on a timed tween; poll rather than guess how long a
+  // software renderer takes to play it.
+  let panelOff = false;
+  for (let waited = 0; waited < 15000 && !panelOff; waited += 400) {
+    await page.waitForTimeout(400);
+    panelOff = await page.evaluate(() => window.pcb.game.current.panelRemoved);
+  }
+  if (!panelOff) throw new Error('side panel did not come off after removing the screws');
+  const stepNow = (await page.locator('.step-label').textContent()) ?? '';
+  if (!/STANDOFFS/.test(stepNow)) throw new Error(`expected the standoff step, got "${stepNow}"`);
+  log('✓ side panel removed, advanced to standoffs');
   await shot(page, 'panel-open');
 
   // From here the remaining steps are exercised through the debug API, which

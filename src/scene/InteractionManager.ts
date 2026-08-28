@@ -163,6 +163,9 @@ export class InteractionManager {
   private castAt(x: number, y: number): THREE.Intersection[] {
     this.camera.ndc(x, y, this.pointer);
     this.raycaster.setFromCamera(this.pointer, this.camera.camera);
+    // `root` is this build's own subtree, not the whole scene: three.js
+    // raycasting ignores `visible`, so anything else parked in the graph would
+    // silently intercept every tap.
     return this.raycaster.intersectObject(this.root, true);
   }
 

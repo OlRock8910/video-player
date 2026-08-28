@@ -25,10 +25,7 @@ export class MenuScreen implements Screen {
   constructor(
     private scene: SceneRoot,
     private ui: UIManager
-  ) {
-    this.scene.buildRoot.add(this.demo.root);
-    this.demo.root.visible = false;
-  }
+  ) {}
 
   /** A pre-assembled showpiece PC, built once and reused. */
   private buildDemo(): void {
@@ -124,7 +121,9 @@ export class MenuScreen implements Screen {
 
   onEnter(): void {
     this.buildDemo();
-    this.demo.root.visible = true;
+    // Added and removed rather than just hidden: an invisible object still
+    // takes part in raycasting and matrix updates.
+    this.scene.buildRoot.add(this.demo.root);
     this.scene.setWorkshopVisible(true);
     audio.playMusic('menu');
     this.scene.setMonitor(true, 0x081826);
@@ -150,7 +149,7 @@ export class MenuScreen implements Screen {
   onExit(): void {
     this.detachFrame?.();
     this.detachFrame = null;
-    this.demo.root.visible = false;
+    this.demo.root.removeFromParent();
     this.scene.cameraController.setLocked(false);
   }
 

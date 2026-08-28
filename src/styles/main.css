@@ -1186,3 +1186,26 @@ input[type='text'] {
   z-index: 60;
   white-space: pre;
 }
+
+/* ---------------------------------------------------------------- */
+/* Input pass-through                                                */
+/* ---------------------------------------------------------------- */
+
+/*
+ * Screens are full-bleed children of #ui-root, which grants them pointer
+ * events. For the screens drawn over the live 3D scene that would swallow
+ * every touch before it reached the canvas — no camera orbit, no tapping a
+ * component, no holding a screw. Those screens pass input through, and only
+ * their actual UI opts back in.
+ */
+#menu,
+#workshop,
+#showcase {
+  pointer-events: none;
+}
+
+#menu > *:not(.veil),
+#showcase > *,
+#workshop-hud > * {
+  pointer-events: auto;
+}

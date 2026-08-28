@@ -110,7 +110,7 @@ export class WorkshopScreen implements Screen {
     this.interaction = new InteractionManager(
       this.buildScene,
       this.scene.cameraController,
-      this.scene.buildRoot,
+      this.buildScene.root,
       {
         onSelect: (info) => this.handleSelect(info),
         onDropOnTarget: (held) => this.handleDrop(held),

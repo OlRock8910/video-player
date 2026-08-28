@@ -55,7 +55,7 @@ async function boot(): Promise<void> {
     ui.register(new SettingsScreen(ui, scene));
     ui.register(new ShowcaseScreen(scene, ui, () => workshop.sceneForShowcase));
 
-    installDebugTools(scene, ui);
+    installDebugTools(scene, ui, () => workshop.sceneForShowcase);
 
     // Audio needs a gesture; the first touch anywhere unlocks it (§43).
     const unlock = (): void => {

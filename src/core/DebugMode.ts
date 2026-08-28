@@ -14,7 +14,14 @@ import type { Slot } from '../data/types';
  * Developer mode (§55). Off for normal players; when enabled in Settings it
  * shows a performance readout and exposes tools on `window.pcb`.
  */
-export function installDebugTools(scene: SceneRoot, ui: UIManager): void {
+export function installDebugTools(
+  scene: SceneRoot,
+  ui: UIManager,
+  buildSceneProbe: () => {
+    panelScrewsRemoved: boolean;
+    panelScrews: readonly { progress: number }[];
+  } | null = () => null
+): void {
   let overlay: HTMLDivElement | null = null;
   let detach: (() => void) | null = null;
 
@@ -160,6 +167,15 @@ export function installDebugTools(scene: SceneRoot, ui: UIManager): void {
     },
     /** Every component id, for use with spawn(). */
     listComponents: (): string[] => ALL_COMPONENTS.map((c) => c.id),
+    /**
+     * Whether every side-panel thumbscrew has been backed out. Exposed so the
+     * playthrough test can assert the case-opening sequence really happened
+     * rather than inferring it from the step label.
+     */
+    panelScrewsRemoved: (): boolean | null => buildSceneProbe()?.panelScrewsRemoved ?? null,
+    /** Whether one specific panel thumbscrew has been backed all the way out. */
+    panelScrewOut: (index: number): boolean =>
+      (buildSceneProbe()?.panelScrews?.[index]?.progress ?? 1) <= 0.02,
     scene,
     game,
     save,
