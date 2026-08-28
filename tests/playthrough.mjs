@@ -8,7 +8,7 @@
  * Run with: node tests/playthrough.mjs [--shots]
  */
 import { chromium } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 
 const SHOTS = process.argv.includes('--shots');
 const SHOT_DIR = process.env.SHOT_DIR || '/tmp/pcb-shots';
@@ -58,8 +58,12 @@ async function dragToCentre(page) {
 }
 
 async function main() {
+  // Use a preinstalled browser when one is present (sandboxes often ship one);
+  // otherwise let Playwright resolve its own, as it does on CI runners.
+  const preinstalled = process.env.CHROME_PATH || '/opt/pw-browsers/chromium';
   const browser = await chromium.launch({
-    executablePath: process.env.CHROME_PATH || '/opt/pw-browsers/chromium',
+    ...(existsSync(preinstalled) ? { executablePath: preinstalled } : {}),
+    // No GPU on CI, so force the software rasteriser rather than failing.
     args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox'],
   });
   const context = await browser.newContext({
