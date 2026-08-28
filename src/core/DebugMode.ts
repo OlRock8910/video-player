@@ -20,6 +20,7 @@ export function installDebugTools(
   buildSceneProbe: () => {
     panelScrewsRemoved: boolean;
     panelScrews: readonly { progress: number }[];
+    remove: (slot: Slot) => void;
   } | null = () => null
 ): void {
   let overlay: HTMLDivElement | null = null;
@@ -128,6 +129,8 @@ export function installDebugTools(
     deleteFrom: (slot: Slot): void => {
       game.current.parts = game.current.parts.filter((p) => p.slot !== slot);
       game.current.state = recomputeState(game.current);
+      // The mesh has to go too, or the model and the scene disagree.
+      buildSceneProbe()?.remove(slot);
       game.persistBuild();
       ui.refresh();
     },

@@ -103,11 +103,6 @@ export class RGBManager {
     }
   }
 
-  /** How many distinct zones actually have lighting installed (§26 RGB jobs). */
-  activeZoneCount(): number {
-    return new Set(this.entries.map((e) => e.zone)).size;
-  }
-
   update(dt: number): void {
     if (!this.enabled || !this.profile) return;
     this.time += dt * (0.25 + this.profile.speed * 1.5);

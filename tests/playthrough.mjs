@@ -42,21 +42,6 @@ async function exists(page, text, selector = 'button') {
   return (await page.locator(selector, { hasText: text }).count()) > 0;
 }
 
-/** Drag the held part onto the slot: press in the middle, move, release. */
-async function dragToCentre(page) {
-  const box = await page.locator('#scene-canvas').boundingBox();
-  const cx = box.x + box.width / 2;
-  const cy = box.y + box.height / 2;
-  await page.mouse.move(cx + 60, cy + 60);
-  await page.mouse.down();
-  for (let i = 1; i <= 8; i++) {
-    await page.mouse.move(cx + 60 - (60 * i) / 8, cy + 60 - (60 * i) / 8);
-    await page.waitForTimeout(16);
-  }
-  await page.mouse.up();
-  await page.waitForTimeout(300);
-}
-
 async function main() {
   // Use a preinstalled browser when one is present (sandboxes often ship one);
   // otherwise let Playwright resolve its own, as it does on CI runners.

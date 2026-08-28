@@ -175,15 +175,6 @@ export class BuildScene {
     this.tween(panel, to, quat, 0.9, onDone);
   }
 
-  closePanel(): void {
-    if (!this.caseBuilt || !this.layout || !this.panelOpen) return;
-    this.panelOpen = false;
-    const panel = this.caseBuilt.sidePanel;
-    const to = panel.position.clone().sub(this.layout.panelOpenOffset);
-    to.y += 0.3;
-    this.tween(panel, to, new THREE.Quaternion(), 0.7);
-  }
-
   get isPanelOpen(): boolean {
     return this.panelOpen;
   }
