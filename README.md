@@ -28,9 +28,22 @@ Other scripts:
 | `npm test` | Unit tests for the simulation engine |
 | `npm run typecheck` | TypeScript only |
 | `npm run preview` | Serve the built bundle on :4173 |
+| `npm run build:singlefile` | Bundle the whole game into one `out/PC-Builder.html` |
+| `npm run verify:singlefile` | Prove that file runs offline over `file://` |
 | `node tests/playthrough.mjs --shots` | Drive a full build in a real browser and screenshot it |
 
 The playthrough test needs the preview server running first.
+
+## Playing it without any toolchain
+
+`npm run build:singlefile` inlines the JavaScript and CSS into a single
+self-contained `out/PC-Builder.html` (~670 KB). Copy that one file anywhere and
+double-click it — it opens in the browser and runs with no server, no npm and
+no network.
+
+`npm run verify:singlefile` opens it over `file://` in a real browser and fails
+if the page makes *any* request to a non-`file:` origin, which is what keeps the
+"self-contained" claim honest.
 
 ---
 
