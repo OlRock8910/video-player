@@ -82,7 +82,7 @@ export function buildCase(c: CaseComponent, quality: 'low' | 'high'): BuiltCase 
   const D = mm(c.dimensions.length); // depth  (z)
   const t = mm(1.2); // panel thickness
 
-  const shell = mats.steel(c.tier === 'legendary' ? 0x2a2f38 : 0x15181d, 0.55);
+  const shell = mats.steel(c.tier === 'legendary' ? 0x39404b : 0x262c35, 0.55);
 
   // Floor, ceiling, back, front, and the far side — the near side is removable.
   const floor = new THREE.Mesh(geo.box(W, t, D), shell);
@@ -100,7 +100,7 @@ export function buildCase(c: CaseComponent, quality: 'low' | 'high'): BuiltCase 
   g.add(floor, roof, back, farSide);
 
   // Front: mesh grille for airflow cases, solid for the quiet one.
-  const frontMat = c.airflowQuality > 0.7 ? mats.plastic(0x0c0e12, 0.95) : mats.steel(0x121519, 0.7);
+  const frontMat = c.airflowQuality > 0.7 ? mats.plastic(0x1a1e25, 0.95) : mats.steel(0x232830, 0.7);
   const front = new THREE.Mesh(geo.box(W, H, t), frontMat);
   front.position.set(0, H / 2, D / 2 - t / 2);
   front.castShadow = true;
@@ -116,7 +116,7 @@ export function buildCase(c: CaseComponent, quality: 'low' | 'high'): BuiltCase 
   }
 
   // Motherboard tray with routing cut-outs.
-  const tray = new THREE.Mesh(geo.box(t, H * 0.82, D * 0.78), mats.steel(0x1a1e24, 0.6));
+  const tray = new THREE.Mesh(geo.box(t, H * 0.82, D * 0.78), mats.steel(0x2b323c, 0.6));
   tray.position.set(-W / 2 + mm(28), H * 0.5, -mm(8));
   tray.receiveShadow = true;
   g.add(tray);
@@ -207,7 +207,7 @@ export function buildMotherboard(m: MotherboardComponent): BuiltPart {
   const W = mm(wmm);
   const H = mm(hmm);
 
-  const board = new THREE.Mesh(geo.box(W, H, mm(1.6)), mats.pcb(m.tier === 'budget' ? 0x0d1a14 : 0x0a0d12));
+  const board = new THREE.Mesh(geo.box(W, H, mm(1.6)), mats.pcb(m.tier === 'budget' ? 0x16301f : 0x161b26));
   board.castShadow = true;
   board.receiveShadow = true;
   g.add(board);
@@ -400,7 +400,7 @@ export function buildGpu(gpu: GpuComponent): BuiltPart {
   g.add(contacts);
 
   // Cooler shroud.
-  const shroud = new THREE.Mesh(geo.box(L, H * 0.86, T), mats.plastic(0x16191f, 0.7));
+  const shroud = new THREE.Mesh(geo.box(L, H * 0.86, T), mats.plastic(0x272d36, 0.7));
   shroud.position.set(0, mm(8), T / 2 + mm(1));
   shroud.castShadow = true;
   g.add(shroud);
@@ -416,7 +416,7 @@ export function buildGpu(gpu: GpuComponent): BuiltPart {
   const fanRadius = Math.min(H * 0.36, L / (fanCount * 2.3));
   for (let i = 0; i < fanCount; i++) {
     const cx = -L / 2 + (L / (fanCount + 1)) * (i + 1);
-    const housing = new THREE.Mesh(geo.cylinder(fanRadius, fanRadius, mm(3), 20), mats.plastic(0x0c0e12));
+    const housing = new THREE.Mesh(geo.cylinder(fanRadius, fanRadius, mm(3), 20), mats.plastic(0x1c2129));
     housing.rotation.x = Math.PI / 2;
     housing.position.set(cx, mm(8), T + mm(0.5));
     g.add(housing);
@@ -472,7 +472,7 @@ function buildFanRotor(radius: number, accent: number): THREE.Group {
   rotor.add(hub);
   const bladeGeo = geo.box(radius * 0.95, radius * 0.42, mm(0.9));
   for (let i = 0; i < 7; i++) {
-    const blade = new THREE.Mesh(bladeGeo, mats.plastic(0x2e343d, 0.8));
+    const blade = new THREE.Mesh(bladeGeo, mats.plastic(0x424a56, 0.8));
     const a = (i / 7) * Math.PI * 2;
     blade.position.set(Math.cos(a) * radius * 0.5, Math.sin(a) * radius * 0.5, 0);
     blade.rotation.z = a + 0.5;
@@ -498,13 +498,13 @@ export function buildFan(f: FanComponent): BuiltPart {
   // Square frame built from four bars, so the centre stays open.
   const barLong = geo.box(S, mm(9), mm(25));
   for (const dy of [S / 2 - mm(4.5), -S / 2 + mm(4.5)]) {
-    const bar = new THREE.Mesh(barLong, mats.plastic(0x14171c));
+    const bar = new THREE.Mesh(barLong, mats.plastic(0x232830));
     bar.position.y = dy;
     g.add(bar);
   }
   const barShort = geo.box(mm(9), S - mm(18), mm(25));
   for (const dx of [S / 2 - mm(4.5), -S / 2 + mm(4.5)]) {
-    const bar = new THREE.Mesh(barShort, mats.plastic(0x14171c));
+    const bar = new THREE.Mesh(barShort, mats.plastic(0x232830));
     bar.position.x = dx;
     g.add(bar);
   }
@@ -515,7 +515,7 @@ export function buildFan(f: FanComponent): BuiltPart {
   if (f.rgb) {
     const ringMat = mats.emissive(accent, 1.6);
     ringMat.userData.rgbZone = 'fans';
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(S * 0.44, mm(2.4), 6, 24), ringMat);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(S * 0.45, mm(5.5), 6, 26), ringMat);
     ring.position.z = mm(11);
     g.add(ring);
     leds.push(ringMat);
@@ -648,7 +648,7 @@ export function buildCooler(c: CoolerComponent): BuiltPart {
 export function buildPsu(p: PsuComponent): BuiltPart {
   const g = new THREE.Group();
   const D = mm(p.depth);
-  const body = new THREE.Mesh(geo.box(mm(150), mm(86), D), mats.steel(0x101317, 0.6));
+  const body = new THREE.Mesh(geo.box(mm(150), mm(86), D), mats.steel(0x20262e, 0.6));
   body.castShadow = true;
   g.add(body);
 

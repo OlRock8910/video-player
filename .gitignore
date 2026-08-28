@@ -2,6 +2,18 @@ node_modules/
 dist/
 .DS_Store
 *.log
-android/
 .vite/
 coverage/
+
+# Android build output — the native project itself IS committed so CI can
+# build the APK without regenerating it.
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/capacitor-cordova-android-plugins/build/
+android/app/src/main/assets/public/
+*.apk
+*.aab
+*.keystore
+!android/gradle/wrapper/gradle-wrapper.jar

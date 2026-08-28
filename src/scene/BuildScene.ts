@@ -102,6 +102,15 @@ export class BuildScene {
     this.cables.setRoutingPath(this.layout.routingPath);
     this.rgb.register(built.group);
 
+    // Spill lights live inside the chassis; count follows the quality preset.
+    const profile = settings.profile();
+    const spillCount = profile.accentLights >= 4 ? 3 : profile.accentLights >= 2 ? 2 : 1;
+    const bounds = new THREE.Box3(
+      new THREE.Vector3(-this.layout.width / 2, 0, -this.layout.depth / 2),
+      new THREE.Vector3(this.layout.width / 2, this.layout.height, this.layout.depth / 2)
+    );
+    this.rgb.attachSpill(built.interior, spillCount, bounds);
+
     // Panel screws start proud and in place (§8).
     for (let i = 0; i < built.panelScrewAnchors.length; i++) {
       const anchor = built.panelScrewAnchors[i];

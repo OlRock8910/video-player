@@ -225,6 +225,24 @@ export class CameraController {
     this.goalTarget.addScaledVector(up, dy * scale);
   }
 
+  /**
+   * Distance at which an object of the given size fits the viewport with a
+   * little margin. Phones are portrait, so the horizontal field of view is the
+   * binding constraint — framing by height alone crops the case off the sides.
+   */
+  distanceToFit(size: number, margin = 1.18): number {
+    const vFov = THREE.MathUtils.degToRad(this.camera.fov);
+    const byHeight = size / (2 * Math.tan(vFov / 2));
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * this.camera.aspect);
+    const byWidth = size / (2 * Math.tan(hFov / 2));
+    return Math.max(byHeight, byWidth) * margin;
+  }
+
+  /** Frame a point so an object of `size` units around it fits on screen. */
+  frame(point: THREE.Vector3, size: number, opts: { theta?: number; phi?: number; margin?: number } = {}): void {
+    this.focusOn(point, this.distanceToFit(size, opts.margin ?? 1.18), opts);
+  }
+
   /** Scripted move used before an important installation (§5). */
   focusOn(point: THREE.Vector3, distance: number, opts: { theta?: number; phi?: number } = {}): void {
     this.goalTarget.copy(point);

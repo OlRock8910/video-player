@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { CameraController } from './CameraController';
 import { geo, mats, mm } from './Materials';
 import { settings, type QualityProfile } from '../core/Settings';
@@ -31,6 +32,7 @@ export class SceneRoot {
   private frameCount = 0;
   private lastFps = 60;
 
+  private envMap: THREE.Texture | null = null;
   private keyLight!: THREE.DirectionalLight;
   private accentLights: THREE.PointLight[] = [];
   private profile: QualityProfile;
@@ -49,10 +51,19 @@ export class SceneRoot {
     this.renderer.setClearColor(0x05070a, 1);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.25;
 
-    this.scene.fog = new THREE.FogExp2(0x05070a, 0.021);
+    this.scene.fog = new THREE.FogExp2(0x05070a, 0.014);
     this.scene.add(this.workshop, this.buildRoot);
+
+    // Metal and glass are almost black without something to reflect. A tiny
+    // generated room gives every PBR material an environment to sample, which
+    // is what makes the chassis read as brushed steel rather than a void.
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environment = this.envMap;
+    this.scene.environmentIntensity = 0.85;
+    pmrem.dispose();
 
     this.cameraController = new CameraController(canvas, this.aspect());
     this.buildEnvironment();
@@ -223,25 +234,31 @@ export class SceneRoot {
   monitorMaterial!: THREE.MeshStandardMaterial;
 
   private buildLighting(): void {
-    const ambient = new THREE.AmbientLight(0x4a5a72, 0.5);
+    // A dark game still needs enough light to read shapes on a phone screen.
+    const ambient = new THREE.AmbientLight(0x6c7f9c, 1.15);
     this.scene.add(ambient);
 
-    const hemi = new THREE.HemisphereLight(0x6f8fb5, 0x0a0c10, 0.55);
+    const hemi = new THREE.HemisphereLight(0x8fb0d8, 0x141a22, 1.35);
     this.scene.add(hemi);
 
-    this.keyLight = new THREE.DirectionalLight(0xd8e6ff, 2.1);
+    this.keyLight = new THREE.DirectionalLight(0xe8f2ff, 3.2);
     this.keyLight.position.set(6, 11, 6);
     this.keyLight.target.position.set(0, 1.5, 0);
     this.scene.add(this.keyLight, this.keyLight.target);
 
     // Cool rim from behind, warm fill from the side — the premium dark look.
-    const rim = new THREE.DirectionalLight(0x3d8bff, 0.9);
+    const rim = new THREE.DirectionalLight(0x5aa8ff, 1.5);
     rim.position.set(-7, 5, -8);
     this.scene.add(rim);
 
-    const fill = new THREE.DirectionalLight(0xffa060, 0.35);
+    const fill = new THREE.DirectionalLight(0xffb070, 0.85);
     fill.position.set(-6, 3, 7);
     this.scene.add(fill);
+
+    // A soft overhead bounce so the inside of the case is never pitch black.
+    const interior = new THREE.PointLight(0xbfd8ff, 26, 14, 2.1);
+    interior.position.set(2.4, 5.2, 1.6);
+    this.scene.add(interior);
 
     // Accent point lights, dropped on lower quality.
     const accentColors = [0x00d0ff, 0xff2f8a, 0x9d7bff, 0x00e5a0, 0xffd23f, 0x3d8bff];
@@ -280,7 +297,7 @@ export class SceneRoot {
       this.accentLights[i].intensity = i < p.accentLights ? 2.4 : 0;
     }
 
-    this.renderer.toneMappingExposure = p.bloom ? 1.12 : 1.0;
+    this.renderer.toneMappingExposure = p.bloom ? 1.32 : 1.2;
     this.handleResize();
   }
 
@@ -382,6 +399,7 @@ export class SceneRoot {
     window.removeEventListener('resize', this.handleResize);
     this.cameraController.dispose();
     disposeChildren(this.scene);
+    this.envMap?.dispose();
     mats.dispose();
     geo.dispose();
     this.renderer.dispose();
