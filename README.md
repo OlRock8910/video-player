@@ -81,9 +81,25 @@ artifact.
 
 The whole run takes about five minutes.
 
-> The release APK is signed with the debug keystore so CI produces something
-> installable. Add a real keystore and a `signingConfigs.release` block in
-> `android/app/build.gradle` before publishing anywhere.
+### Signing, and "App not installed"
+
+Both APKs are signed with the fixed key in `android/app/pcbuilder-sideload.jks`,
+which is committed on purpose and whose password is public. It exists so every
+build carries the same signature.
+
+Earlier builds were signed with Gradle's auto-generated debug keystore, which
+is created per machine — so each CI run produced a differently-signed APK, and
+Android refuses to install one over another. That shows up on the phone as
+**"Something went wrong. App not installed."** with no further explanation.
+
+If you have one of those older builds installed, **uninstall PC Builder once**
+before installing a current APK. Every build from here upgrades cleanly.
+
+CI verifies both APKs are signed by this key and fails the build if not, so the
+problem can no longer reach a phone unnoticed.
+
+Publishing to Play Store would need a real key kept out of the repository; this
+one signs sideload builds and nothing else.
 
 ---
 
