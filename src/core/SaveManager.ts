@@ -3,6 +3,7 @@ import { settings, type GameSettings, DEFAULT_SETTINGS } from './Settings';
 import { type Build, type RgbProfile, createBuild, defaultRgbProfile } from '../sim/Build';
 import type { BenchmarkResult } from '../sim/BenchmarkManager';
 import { getComponent } from '../data/catalog';
+import { DEFAULT_DESK_ID, DESKS } from '../data/desks';
 
 const SAVE_KEY = 'pcbuilder.save.v1';
 const SAVE_VERSION = 1;
@@ -38,6 +39,9 @@ export interface SaveData {
   inventory: string[];
   /** Component ids unlocked in the shop beyond the default set. */
   unlocked: string[];
+  /** Workbench the player is using, and the ones they own (cosmetic). */
+  deskId: string;
+  ownedDesks: string[];
   currentBuild: Build | null;
   savedPcs: SavedPc[];
   achievements: string[];
@@ -66,6 +70,8 @@ export function freshSave(): SaveData {
     },
     inventory: [],
     unlocked: [],
+    deskId: DEFAULT_DESK_ID,
+    ownedDesks: [DEFAULT_DESK_ID],
     currentBuild: null,
     savedPcs: [],
     achievements: [],
@@ -121,6 +127,12 @@ class SaveManagerImpl {
     for (const pc of out.savedPcs) pc.build = this.sanitiseBuild(pc.build);
     out.currentBuild = out.currentBuild ? this.sanitiseBuild(out.currentBuild) : null;
     out.achievements = (out.achievements ?? []).filter((a) => typeof a === 'string');
+
+    // Drop desks that no longer exist, and never leave the player benchless.
+    const deskIds = new Set(DESKS.map((d) => d.id));
+    out.ownedDesks = (out.ownedDesks ?? []).filter((id) => deskIds.has(id));
+    if (!out.ownedDesks.includes(DEFAULT_DESK_ID)) out.ownedDesks.push(DEFAULT_DESK_ID);
+    if (!out.ownedDesks.includes(out.deskId)) out.deskId = DEFAULT_DESK_ID;
     return out;
   }
 

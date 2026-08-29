@@ -6,7 +6,7 @@ import { save } from '../core/SaveManager';
 import { audio } from '../core/AudioManager';
 import { settings } from '../core/Settings';
 import { reputationLevel } from '../data/career';
-import type { SceneRoot } from '../scene/SceneRoot';
+import { PC_STAND_X, PC_STAND_Z, type SceneRoot } from '../scene/SceneRoot';
 import { BuildScene } from '../scene/BuildScene';
 import { requireComponent } from '../data/catalog';
 import { createBuild, defaultRgbProfile } from '../sim/Build';
@@ -123,8 +123,10 @@ export class MenuScreen implements Screen {
     this.buildDemo();
     // Added and removed rather than just hidden: an invisible object still
     // takes part in raycasting and matrix updates.
+    this.demo.root.position.set(PC_STAND_X, 0, PC_STAND_Z);
     this.scene.buildRoot.add(this.demo.root);
     this.scene.setWorkshopVisible(true);
+    this.scene.setDesk(game.deskId);
     audio.playMusic('menu');
     this.scene.setMonitor(true, 0x081826);
 
@@ -133,10 +135,11 @@ export class MenuScreen implements Screen {
     // between the title and the button stack rather than behind them.
     const layout = this.demo.caseLayout;
     const size = layout ? Math.max(layout.height, layout.depth) : 5.2;
-    this.scene.cameraController.frame(new THREE.Vector3(0, size * 0.06, 0), size, {
-      phi: Math.PI * 0.46,
-      margin: 1.5,
-    });
+    this.scene.cameraController.frame(
+      new THREE.Vector3(PC_STAND_X, size * 0.06, PC_STAND_Z),
+      size,
+      { phi: Math.PI * 0.46, margin: 1.5 }
+    );
     this.scene.cameraController.setLocked(true);
 
     this.detachFrame = this.scene.onFrame((dt, elapsed) => {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { UIManager } from './UIManager';
 import { el } from './dom';
-import type { SceneRoot } from '../scene/SceneRoot';
+import { PC_STAND_X, PC_STAND_Z, type SceneRoot } from '../scene/SceneRoot';
 import type { BuildScene } from '../scene/BuildScene';
 import type { Build } from '../sim/Build';
 import { audio } from '../core/AudioManager';
@@ -67,7 +67,7 @@ export function showPowerOnSequence(opts: PowerOnOptions): void {
   scene.cameraController.setLocked(true);
   const layout = buildScene.caseLayout;
   const caseSize = layout ? Math.max(layout.height, layout.depth) : 5;
-  const casePos = new THREE.Vector3(0, caseSize * 0.46, 0);
+  const casePos = new THREE.Vector3(PC_STAND_X, caseSize * 0.46, PC_STAND_Z);
   scene.cameraController.frame(casePos, caseSize, { phi: Math.PI * 0.44, margin: 1.3 });
 
   // 1. Silence, then the switch.

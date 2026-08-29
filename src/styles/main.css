@@ -1209,3 +1209,53 @@ input[type='text'] {
 #workshop-hud > * {
   pointer-events: auto;
 }
+
+/* ---------------------------------------------------------------- */
+/* Part thumbnails                                                   */
+/* ---------------------------------------------------------------- */
+
+/*
+ * Shop cards and tray items show the part's real 3D model, rendered offscreen
+ * by PartPreview. A name and a price do not tell you a GPU is a four-slot brick.
+ */
+.thumb {
+  flex: 0 0 auto;
+  width: 66px;
+  height: 66px;
+  border-radius: 10px;
+  background: radial-gradient(circle at 40% 32%, rgba(90, 118, 155, 0.22), rgba(8, 11, 16, 0.9) 72%);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.thumb-empty {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+}
+
+.tray-thumb {
+  width: 100%;
+  height: 54px;
+  margin-bottom: 6px;
+  border-radius: 7px;
+  background: radial-gradient(circle at 42% 34%, rgba(90, 118, 155, 0.2), rgba(8, 11, 16, 0.85) 74%);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.tray-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

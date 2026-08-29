@@ -32,7 +32,13 @@ export interface BuiltPart {
 
 const empty = (): BuiltPart => ({ group: new THREE.Group(), spinners: [], leds: [] });
 
-/** Small helper: an M3-ish screw with a visible cross head. */
+/**
+ * Small helper: an M3-ish screw with a visible cross head.
+ *
+ * Carries its own glow ring, named `screw-glow`, which BuildScene pulses green
+ * while the screw still needs driving — a screw head is only a few pixels on a
+ * phone, so it needs something to draw the eye.
+ */
 export function buildScrew(color = 0x8c949e): THREE.Group {
   const g = new THREE.Group();
   const head = new THREE.Mesh(geo.cylinder(mm(3.2), mm(3.2), mm(1.4), 10), mats.aluminium(color));
@@ -45,7 +51,23 @@ export function buildScrew(color = 0x8c949e): THREE.Group {
   slotA.position.z = mm(0.75);
   const slotB = slotA.clone();
   slotB.rotation.z = Math.PI / 2;
-  g.add(head, shaft, slotA, slotB);
+
+  // Own material instance, not a cached one — this pulses per screw.
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0x3dff9a,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+    // Drawn over the chassis so a screw in shadow is still findable.
+    depthTest: false,
+  });
+  const glow = new THREE.Mesh(new THREE.TorusGeometry(mm(6.5), mm(1.3), 6, 20), glowMat);
+  glow.position.z = mm(1.4);
+  glow.name = 'screw-glow';
+  glow.renderOrder = 999;
+  glow.visible = false;
+
+  g.add(head, shaft, slotA, slotB, glow);
   return g;
 }
 

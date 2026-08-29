@@ -9,6 +9,7 @@ import { isCase } from '../data/types';
 import { getComponent } from '../data/catalog';
 import { type Build, screwsFor } from '../sim/Build';
 import { settings } from '../core/Settings';
+import { PC_STAND_X, PC_STAND_Z } from './SceneRoot';
 
 export interface PlacedPart {
   slot: Slot;
@@ -28,6 +29,8 @@ export interface ScrewInstance {
   done: boolean;
   /** Set once a removed screw has been dropped into the desk tray. */
   popped?: boolean;
+  /** Ring that pulses green while this screw still needs attention. */
+  glow?: THREE.Mesh;
 }
 
 /** A short transform animation. Everything moves, nothing teleports (§9). */
@@ -127,6 +130,7 @@ export class BuildScene {
         axis: new THREE.Vector3(1, 0, 0),
         slot: 'case',
         done: true,
+        glow: screw.getObjectByName('screw-glow') as THREE.Mesh | undefined,
       });
     }
   }
@@ -159,7 +163,12 @@ export class BuildScene {
     const world = new THREE.Vector3();
     screw.getWorldPosition(world);
     this.root.attach(screw);
-    const target = new THREE.Vector3(3.9 + (Math.random() - 0.5) * 0.7, 0.14, 2.1 + (Math.random() - 0.5) * 0.5);
+    // Matches the screw tray's place on the bench.
+    const target = new THREE.Vector3(
+      PC_STAND_X + 3.2 + (Math.random() - 0.5) * 0.7,
+      0.14,
+      PC_STAND_Z + 1.5 + (Math.random() - 0.5) * 0.5
+    );
     this.root.worldToLocal(target);
     this.tween(screw, target, new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, Math.random() * 3)), 0.55);
   }
@@ -336,6 +345,7 @@ export class BuildScene {
         axis: new THREE.Vector3(1, 0, 0),
         slot: record.slot,
         done: false,
+        glow: screw.getObjectByName('screw-glow') as THREE.Mesh | undefined,
       });
     }
   }
@@ -584,7 +594,35 @@ export class BuildScene {
       this.highlight.scale.setScalar(s);
     }
 
+    this.updateScrewGlow(elapsed);
+
     this.rgb.update(dt);
+  }
+
+  /**
+   * Pulse a green ring on every screw still waiting on the player, and hide it
+   * the moment that screw is done. Panel screws count while they are still in;
+   * mounting screws count until they are driven home.
+   */
+  private updateScrewGlow(elapsed: number): void {
+    const pulse = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(elapsed * 4.2));
+    const scale = 1 + Math.sin(elapsed * 4.2) * 0.16;
+
+    const apply = (s: ScrewInstance, wanted: boolean): void => {
+      if (!s.glow) return;
+      if (s.glow.visible !== wanted) s.glow.visible = wanted;
+      if (!wanted) return;
+      (s.glow.material as THREE.MeshBasicMaterial).opacity = pulse;
+      s.glow.scale.setScalar(scale);
+    };
+
+    // Only draw attention to the panel screws while the panel is still on.
+    const panelPending = !this.panelOpen;
+    for (const s of this.panelScrews) apply(s, panelPending && s.progress > 0.02);
+
+    for (const part of this.placed.values()) {
+      for (const s of part.screws) apply(s, !s.done);
+    }
   }
 
   private tween(

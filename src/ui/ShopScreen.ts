@@ -1,11 +1,14 @@
 import type { Screen, UIManager } from './UIManager';
 import { button, chip, el, iconButton, money } from './dom';
 import { game } from '../core/GameManager';
+import { toast } from '../core/EventBus';
 import { BRANDS } from '../data/brands';
 import { CATEGORY_LABELS } from '../data/catalog';
 import type { Category, Component } from '../data/types';
+import type { Desk } from '../data/desks';
 import { REPUTATION_LEVELS } from '../data/career';
 import { canInstall } from '../sim/CompatibilityManager';
+import { partPreview } from '../scene/PartPreview';
 import {
   isCase,
   isCooler,
@@ -31,9 +34,11 @@ const CATEGORY_ORDER: Category[] = [
 ];
 
 /** The parts shop (§29). Every component with its full spec sheet. */
+type ShopTab = Category | 'desk';
+
 export class ShopScreen implements Screen {
   readonly id = 'shop' as const;
-  private category: Category = 'case';
+  private category: ShopTab = 'case';
 
   constructor(private ui: UIManager) {}
 
@@ -43,15 +48,37 @@ export class ShopScreen implements Screen {
     const tabs = el(
       'div',
       { class: 'tray-scroll', style: { padding: '4px 14px 10px' } },
-      CATEGORY_ORDER.map((c) =>
-        chip(CATEGORY_LABELS[c], this.category === c, () => {
-          this.category = c;
+      [
+        // Benches are not PC parts, so they get their own tab up front.
+        chip('Workbenches', this.category === 'desk', () => {
+          this.category = 'desk';
           this.ui.refresh();
-        })
-      )
+        }),
+        ...CATEGORY_ORDER.map((c) =>
+          chip(CATEGORY_LABELS[c], this.category === c, () => {
+            this.category = c;
+            this.ui.refresh();
+          })
+        ),
+      ]
     );
 
     const list = el('div', { class: 'list' });
+
+    if (this.category === 'desk') {
+      for (const desk of game.deskCatalog()) list.append(this.deskCard(desk));
+      root.append(
+        el('div', { class: 'topbar' }, [
+          iconButton('‹', () => this.ui.back(), 'Back'),
+          el('h2', { text: 'Parts Shop' }),
+          wallet,
+        ]),
+        tabs,
+        el('div', { class: 'screen-scroll' }, [list])
+      );
+      return;
+    }
+
     const parts = game
       .shopCatalog()
       .filter((c) => c.category === this.category)
@@ -83,7 +110,9 @@ export class ShopScreen implements Screen {
 
     const node = el('div', { class: `card ${locked ? 'locked' : ''}` }, [
       el('div', { class: 'card-head' }, [
-        el('div', { style: { minWidth: '0' } }, [
+        // The part's real 3D model, so you can see what you are buying.
+        this.thumb(part),
+        el('div', { style: { minWidth: '0', flex: '1' } }, [
           el('div', { class: 'card-title', text: part.name }),
           el('div', { class: 'card-brand', text: BRANDS[part.brand]?.name ?? part.brand }),
         ]),
@@ -114,6 +143,78 @@ export class ShopScreen implements Screen {
           ].filter(Boolean) as HTMLElement[]),
     ]);
     return node;
+  }
+
+  /** A workbench: cosmetic, owned once, and switchable at any time. */
+  private deskCard(desk: Desk): HTMLElement {
+    const owned = game.ownsDesk(desk.id);
+    const active = game.deskId === desk.id;
+    const locked = game.deskLocked(desk);
+
+    return el('div', { class: `card ${active ? 'selected' : ''} ${locked ? 'locked' : ''}` }, [
+      el('div', { class: 'card-head' }, [
+        el('div', { style: { minWidth: '0', flex: '1' } }, [
+          el('div', { class: 'card-title', text: desk.name }),
+          el('div', { class: 'card-brand', text: desk.maker }),
+        ]),
+        el('div', { style: { textAlign: 'right' } }, [
+          el('div', {
+            class: 'card-price',
+            text: desk.price === 0 ? 'Included' : money(desk.price),
+          }),
+          active ? el('div', { class: 'tier tier-performance', text: 'in use' }) : null,
+        ]),
+      ]),
+      el('div', { class: 'dim', style: { fontSize: '0.8rem', lineHeight: '1.35' }, text: desk.blurb }),
+      el('div', { class: 'spec-row' }, [
+        el('span', { class: 'spec', text: `${desk.width.toFixed(1)} × ${desk.depth.toFixed(1)} units` }),
+        el('span', { class: 'spec', text: `${desk.monitors} monitor${desk.monitors > 1 ? 's' : ''}` }),
+        desk.ledStrip ? el('span', { class: 'spec', text: 'Under-desk lighting' }) : null,
+        desk.pegboard ? el('span', { class: 'spec', text: 'Tool pegboard' }) : null,
+      ].filter(Boolean) as HTMLElement[]),
+      locked
+        ? el('div', {
+            class: 'warn',
+            style: { fontSize: '0.76rem' },
+            text: `Unlocks at ${REPUTATION_LEVELS[desk.reputationRequired ?? 0]?.name ?? 'a higher rank'}`,
+          })
+        : active
+          ? el('div', { class: 'good', style: { fontSize: '0.74rem' }, text: '✓ Currently on the bench' })
+          : el('div', { class: 'btn-row' }, [
+              owned
+                ? button('Use this bench', () => {
+                    game.useDesk(desk.id);
+                    toast(`Switched to ${desk.name}`, 'good');
+                    this.ui.refresh();
+                  }, { class: 'primary' })
+                : button('Buy', () => {
+                    if (game.buyDesk(desk)) {
+                      game.useDesk(desk.id);
+                      this.ui.refresh();
+                    }
+                  }, { class: 'primary' }),
+            ]),
+    ]);
+  }
+
+  /**
+   * A rendered thumbnail of the part. Rendering happens off the critical path
+   * so a long shop list still scrolls immediately.
+   */
+  private thumb(part: Component): HTMLElement {
+    const box = el('div', { class: 'thumb' });
+    requestAnimationFrame(() => {
+      const url = partPreview.render(part.id);
+      if (!url) {
+        // No preview available on this device; keep the layout tidy.
+        box.classList.add('thumb-empty');
+        box.textContent = part.category.slice(0, 3).toUpperCase();
+        return;
+      }
+      const img = el('img', { attrs: { src: url, alt: part.name, loading: 'lazy' } });
+      box.append(img);
+    });
+    return box;
   }
 
   /** Does this part fit what is already on the bench? */

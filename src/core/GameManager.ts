@@ -3,6 +3,7 @@ import { bus, toast } from './EventBus';
 import { audio } from './AudioManager';
 import { ALL_COMPONENTS, getComponent } from '../data/catalog';
 import type { Component } from '../data/types';
+import { DESKS, getDesk, type Desk } from '../data/desks';
 import {
   ACHIEVEMENTS,
   CHALLENGES,
@@ -156,6 +157,55 @@ class GameManagerImpl {
       if (c) seen.set(id, c);
     }
     return [...seen.values()];
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Workbenches — cosmetic progression, no effect on any build.       */
+  /* ---------------------------------------------------------------- */
+
+  get deskId(): string {
+    return save.get().deskId;
+  }
+
+  get desk(): Desk {
+    return getDesk(this.deskId);
+  }
+
+  ownsDesk(id: string): boolean {
+    return save.get().ownedDesks.includes(id);
+  }
+
+  deskLocked(desk: Desk): boolean {
+    return (desk.reputationRequired ?? 0) > this.reputationLevelIndex;
+  }
+
+  deskCatalog(): Desk[] {
+    return DESKS;
+  }
+
+  buyDesk(desk: Desk): boolean {
+    if (this.ownsDesk(desk.id)) return true;
+    if (this.deskLocked(desk)) {
+      toast('Locked', 'warn', `${desk.name} unlocks at a higher reputation.`);
+      return false;
+    }
+    if (this.money < desk.price) {
+      toast('Not enough money', 'warn', `${desk.name} costs $${desk.price}.`);
+      return false;
+    }
+    this.addMoney(-desk.price);
+    save.update((d) => d.ownedDesks.push(desk.id));
+    toast(`Bought ${desk.name}`, 'good');
+    return true;
+  }
+
+  /** Switch the active bench. Returns false if it is not owned. */
+  useDesk(id: string): boolean {
+    if (!this.ownsDesk(id)) return false;
+    save.update((d) => {
+      d.deskId = id;
+    });
+    return true;
   }
 
   /* ---------------------------------------------------------------- */

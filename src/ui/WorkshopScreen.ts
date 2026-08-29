@@ -6,7 +6,7 @@ import { save } from '../core/SaveManager';
 import { audio } from '../core/AudioManager';
 import { haptics } from '../core/HapticsManager';
 import { bus, toast } from '../core/EventBus';
-import type { SceneRoot } from '../scene/SceneRoot';
+import { PC_STAND_X, PC_STAND_Z, type SceneRoot } from '../scene/SceneRoot';
 import { BuildScene } from '../scene/BuildScene';
 import { InteractionManager, type HeldPart } from '../scene/InteractionManager';
 import type { CableKind, Component, Slot } from '../data/types';
@@ -31,6 +31,7 @@ import { runPost } from '../sim/PostManager';
 import { showPowerOnSequence } from './PowerOnSequence';
 import { showBuildReport } from './BuildReport';
 import { openRgbPanel } from './RgbPanel';
+import { partPreview } from '../scene/PartPreview';
 
 /**
  * The building workshop (§4-§21). Owns the 3D build scene, the step pipeline,
@@ -57,6 +58,8 @@ export class WorkshopScreen implements Screen {
     private scene: SceneRoot,
     private ui: UIManager
   ) {
+    // The machine stands on the mat, not at the world origin.
+    this.buildScene.root.position.set(PC_STAND_X, 0, PC_STAND_Z);
     this.scene.buildRoot.add(this.buildScene.root);
   }
 
@@ -96,6 +99,8 @@ export class WorkshopScreen implements Screen {
 
   onEnter(): void {
     this.scene.setWorkshopVisible(true);
+    // The player may have bought a new bench since they were last here.
+    this.scene.setDesk(game.deskId);
     audio.playMusic('workshop');
     this.startedAt = performance.now();
 
@@ -163,10 +168,11 @@ export class WorkshopScreen implements Screen {
   private frameCase(): void {
     const layout = this.buildScene.caseLayout;
     const size = layout ? Math.max(layout.height, layout.depth) : 5;
-    this.scene.cameraController.frame(new THREE.Vector3(0, size * 0.46, 0), size, {
-      phi: Math.PI * 0.44,
-      margin: 1.24,
-    });
+    this.scene.cameraController.frame(
+      new THREE.Vector3(PC_STAND_X, size * 0.46, PC_STAND_Z),
+      size,
+      { phi: Math.PI * 0.44, margin: 1.24 }
+    );
   }
 
   private commitElapsed(): void {
@@ -275,6 +281,14 @@ export class WorkshopScreen implements Screen {
       const slots = step.slots(build);
       const targetSlot = slots.find((s) => !partInSlot(build, s)) ?? slots[0];
       const check = targetSlot ? canInstall(build, part, targetSlot) : { ok: false, issues: [] };
+      const thumb = el('div', { class: 'tray-thumb' });
+      // Render the part's real model so the tray shows shapes, not just names.
+      requestAnimationFrame(() => {
+        const url = partPreview.render(part.id);
+        if (url) thumb.append(el('img', { attrs: { src: url, alt: part.name } }));
+        else thumb.remove();
+      });
+
       const node = el(
         'button',
         {
@@ -284,6 +298,7 @@ export class WorkshopScreen implements Screen {
           },
         },
         [
+          thumb,
           el('div', { class: 'n', text: part.name }),
           el('div', { class: 'b', text: `${part.category.toUpperCase()} · $${part.price}` }),
         ]

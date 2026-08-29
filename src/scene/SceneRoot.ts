@@ -3,6 +3,15 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { CameraController } from './CameraController';
 import { geo, mats, mm } from './Materials';
 import { settings, type QualityProfile } from '../core/Settings';
+import { DEFAULT_DESK_ID, getDesk, type Desk } from '../data/desks';
+
+/**
+ * Where the PC stands on the bench. Kept slightly left of centre and forward of
+ * the monitors so the machine is the subject and the tools sit around it rather
+ * than behind it.
+ */
+export const PC_STAND_X = -1.1;
+export const PC_STAND_Z = 0.9;
 
 /**
  * Owns the renderer, the workshop environment and the frame loop (§4, §40).
@@ -33,6 +42,8 @@ export class SceneRoot {
   private lastFps = 60;
 
   private envMap: THREE.Texture | null = null;
+  private deskGroup = new THREE.Group();
+  private deskId = DEFAULT_DESK_ID;
   private keyLight!: THREE.DirectionalLight;
   private accentLights: THREE.PointLight[] = [];
   private profile: QualityProfile;
@@ -51,7 +62,7 @@ export class SceneRoot {
     this.renderer.setClearColor(0x05070a, 1);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.25;
+    this.renderer.toneMappingExposure = 1.2;
 
     this.scene.fog = new THREE.FogExp2(0x05070a, 0.014);
     this.scene.add(this.workshop, this.buildRoot);
@@ -85,39 +96,86 @@ export class SceneRoot {
   /* ---------------------------------------------------------------- */
 
   private buildEnvironment(): void {
-    const w = this.workshop;
+    // Everything the desk owns lives under one group so swapping desks is a
+    // single removal and rebuild, not a scene-wide edit.
+    this.deskGroup = new THREE.Group();
+    this.deskGroup.name = 'desk';
+    this.workshop.add(this.deskGroup);
+    this.buildDesk(getDesk(this.deskId));
+  }
 
-    // Desk.
-    const deskTop = new THREE.Mesh(geo.box(16, 0.22, 10), mats.desk());
-    deskTop.position.y = -0.11;
-    deskTop.receiveShadow = true;
-    w.add(deskTop);
+  /** Rebuild the bench for a given desk (§4). Safe to call at any time. */
+  buildDesk(desk: Desk): void {
+    this.deskId = desk.id;
+    const w = this.deskGroup;
+    disposeChildren(w);
+
+    const halfW = desk.width / 2;
+    const halfD = desk.depth / 2;
+    // The PC stands on the mat; everything else is arranged around it, and the
+    // build area sits forward of centre so tools have room behind.
+    const buildZ = PC_STAND_Z;
+
+    /* ---- desk top and legs ------------------------------------------ */
+    const top = new THREE.Mesh(
+      geo.box(desk.width, 0.22, desk.depth),
+      new THREE.MeshStandardMaterial({
+        color: desk.topColor,
+        roughness: desk.gloss,
+        metalness: desk.topColor === 0x23262b ? 0.35 : 0.05,
+      })
+    );
+    top.position.y = -0.11;
+    top.receiveShadow = true;
+    w.add(top);
+
+    // A thin front lip reads as a real edge rather than a floating slab.
+    const lip = new THREE.Mesh(geo.box(desk.width, 0.06, 0.08), mats.plastic(0x0d1014, 0.8));
+    lip.position.set(0, -0.2, halfD);
+    w.add(lip);
 
     for (const [lx, lz] of [
-      [-7.2, -4.2],
-      [7.2, -4.2],
-      [-7.2, 4.2],
-      [7.2, 4.2],
+      [-halfW + 0.8, -halfD + 0.8],
+      [halfW - 0.8, -halfD + 0.8],
+      [-halfW + 0.8, halfD - 0.8],
+      [halfW - 0.8, halfD - 0.8],
     ]) {
-      const leg = new THREE.Mesh(geo.box(0.28, 7, 0.28), mats.steel(0x0d0f13, 0.7));
-      leg.position.set(lx, -3.7, lz);
+      const leg = new THREE.Mesh(
+        geo.box(0.28, desk.height * 2, 0.28),
+        new THREE.MeshStandardMaterial({ color: desk.legColor, roughness: 0.5, metalness: 0.6 })
+      );
+      leg.position.set(lx, -desk.height, lz);
       w.add(leg);
     }
 
-    // Anti-static mat under the build area.
-    const mat = new THREE.Mesh(geo.box(9.5, 0.03, 6.4), mats.mat());
-    mat.position.set(0, 0.015, 0.4);
+    // Under-desk lighting on the nicer benches.
+    if (desk.ledStrip) {
+      const stripMat = new THREE.MeshBasicMaterial({ color: desk.ledColor, transparent: true, opacity: 0.85 });
+      const strip = new THREE.Mesh(geo.box(desk.width * 0.9, 0.05, 0.05), stripMat);
+      strip.position.set(0, -0.3, halfD - 0.25);
+      w.add(strip);
+      const glow = new THREE.PointLight(desk.ledColor, 9, 9, 2);
+      glow.position.set(0, -0.9, halfD - 0.6);
+      w.add(glow);
+    }
+
+    /* ---- anti-static mat under the build area ----------------------- */
+    const matW = 8.4 * desk.matScale;
+    const matD = 5.6 * desk.matScale;
+    const mat = new THREE.Mesh(
+      geo.box(matW, 0.03, matD),
+      new THREE.MeshStandardMaterial({ color: desk.matColor, roughness: 0.95 })
+    );
+    mat.position.set(PC_STAND_X, 0.015, buildZ);
     mat.receiveShadow = true;
     w.add(mat);
-    // Mat edge stripe.
-    const stripe = new THREE.Mesh(geo.box(9.5, 0.035, 0.14), mats.plastic(0x2f6fa8, 0.9));
-    stripe.position.set(0, 0.018, 3.5);
+    const stripe = new THREE.Mesh(geo.box(matW, 0.035, 0.12), mats.plastic(0x2f6fa8, 0.9));
+    stripe.position.set(PC_STAND_X, 0.018, buildZ + matD / 2 - 0.12);
     w.add(stripe);
 
-    // Screw tray (§8) — screws visibly land here.
+    /* ---- bench props, arranged around the machine ------------------- */
     const trayGroup = new THREE.Group();
-    const trayFloor = new THREE.Mesh(geo.box(1.5, 0.05, 1.1), mats.plastic(0x1b1f26));
-    trayGroup.add(trayFloor);
+    trayGroup.add(new THREE.Mesh(geo.box(1.5, 0.05, 1.1), mats.plastic(0x1b1f26)));
     for (const [sx, sz, sw, sd] of [
       [0.75, 0, 0.06, 1.1],
       [-0.75, 0, 0.06, 1.1],
@@ -128,11 +186,10 @@ export class SceneRoot {
       wall.position.set(sx, 0.11, sz);
       trayGroup.add(wall);
     }
-    trayGroup.position.set(3.9, 0.05, 2.1);
+    trayGroup.position.set(PC_STAND_X + 3.2, 0.05, buildZ + 1.5);
     trayGroup.name = 'screw-tray';
     w.add(trayGroup);
 
-    // Screwdriver resting on the mat.
     const driver = new THREE.Group();
     const handle = new THREE.Mesh(geo.cylinder(0.13, 0.15, 0.9, 12), mats.plastic(0xd94f2b, 0.6));
     handle.rotation.z = Math.PI / 2;
@@ -143,12 +200,11 @@ export class SceneRoot {
     tip.rotation.z = Math.PI / 2;
     tip.position.x = -1.6;
     driver.add(handle, shaft, tip);
-    driver.position.set(-3.6, 0.18, 2.3);
+    driver.position.set(PC_STAND_X - 2.6, 0.18, buildZ + 1.9);
     driver.rotation.y = 0.4;
     driver.name = 'screwdriver';
     w.add(driver);
 
-    // Thermal paste tube.
     const paste = new THREE.Group();
     const tube = new THREE.Mesh(geo.cylinder(0.11, 0.11, 0.7, 10), mats.plastic(0xc8ccd2, 0.5));
     tube.rotation.z = Math.PI / 2.2;
@@ -156,77 +212,96 @@ export class SceneRoot {
     nozzle.rotation.z = -Math.PI / 2.2;
     nozzle.position.set(0.42, 0.16, 0);
     paste.add(tube, nozzle);
-    paste.position.set(-3.6, 0.12, 1.3);
+    paste.position.set(PC_STAND_X - 2.9, 0.12, buildZ + 1.0);
     paste.name = 'paste-tube';
     w.add(paste);
 
-    // Component boxes stacked at the edge of the bench.
     for (let i = 0; i < 3; i++) {
       const box = new THREE.Mesh(
         geo.box(1.5, 0.5, 1.05),
         mats.plastic([0x1d2733, 0x2a1d33, 0x1d3329][i], 0.9)
       );
-      box.position.set(-5.4 + (i % 2) * 0.2, 0.25 + i * 0.52, -2.4 + i * 0.12);
+      box.position.set(-halfW + 1.9 + (i % 2) * 0.2, 0.25 + i * 0.52, buildZ - 1.4 + i * 0.12);
       box.rotation.y = 0.2 - i * 0.14;
       box.castShadow = true;
-      this.workshop.add(box);
+      w.add(box);
       const label = new THREE.Mesh(geo.box(0.9, 0.24, 0.02), mats.plastic(0xd8dde4, 0.95));
       label.position.set(box.position.x, box.position.y, box.position.z + 0.54);
       label.rotation.y = box.rotation.y;
       w.add(label);
     }
 
-    // Manual and cable ties, small details that sell the bench (§4).
     const manual = new THREE.Mesh(geo.box(1.1, 0.05, 1.5), mats.plastic(0xdfe4ea, 0.95));
-    manual.position.set(4.6, 0.04, -1.4);
+    manual.position.set(PC_STAND_X + 3.4, 0.04, buildZ - 0.9);
     manual.rotation.y = -0.3;
     w.add(manual);
     for (let i = 0; i < 5; i++) {
       const tie = new THREE.Mesh(geo.box(0.5, 0.012, 0.04), mats.plastic(0x0b0d10, 0.9));
-      tie.position.set(4.2 + Math.random() * 0.3, 0.03, 1.1 + i * 0.07);
+      tie.position.set(PC_STAND_X + 3.0 + Math.random() * 0.3, 0.03, buildZ + 0.6 + i * 0.07);
       tie.rotation.y = Math.random() * 0.6;
       w.add(tie);
     }
 
-    // Monitor behind the bench — used for POST and the benchmark (§21, §22).
-    const monitor = new THREE.Group();
-    const panel = new THREE.Mesh(geo.box(6.4, 3.7, 0.12), mats.plastic(0x0a0c10, 0.4));
-    panel.position.y = 2.6;
+    /* ---- monitors and keyboard, pushed to the back ------------------ */
     const screenMat = new THREE.MeshStandardMaterial({
       color: 0x05070a,
       emissive: 0x000000,
       emissiveIntensity: 1,
       roughness: 0.3,
     });
-    const screen = new THREE.Mesh(geo.plane(6.1, 3.4), screenMat);
-    screen.position.set(0, 2.6, 0.07);
-    screen.name = 'monitor-screen';
-    const stand = new THREE.Mesh(geo.box(0.3, 1.5, 0.3), mats.plastic(0x14171c));
-    stand.position.y = 1.0;
-    const base = new THREE.Mesh(geo.box(2.2, 0.1, 1.1), mats.plastic(0x14171c));
-    base.position.y = 0.3;
-    monitor.add(panel, screen, stand, base);
-    monitor.position.set(0, 0, -4.3);
-    monitor.name = 'monitor';
-    w.add(monitor);
     this.monitorMaterial = screenMat;
 
-    // Keyboard.
+    for (let i = 0; i < desk.monitors; i++) {
+      const monitor = new THREE.Group();
+      const panel = new THREE.Mesh(geo.box(5.6, 3.3, 0.12), mats.plastic(0x0a0c10, 0.4));
+      panel.position.y = 2.4;
+      // Only the primary monitor shows POST; the second is a dim side panel.
+      const thisMat = i === 0 ? screenMat : mats.plastic(0x0b1118, 0.4);
+      const screen = new THREE.Mesh(geo.plane(5.3, 3.0), thisMat);
+      screen.position.set(0, 2.4, 0.07);
+      if (i === 0) screen.name = 'monitor-screen';
+      const stand = new THREE.Mesh(geo.box(0.3, 1.4, 0.3), mats.plastic(0x14171c));
+      stand.position.y = 0.9;
+      const base = new THREE.Mesh(geo.box(2.0, 0.1, 1.0), mats.plastic(0x14171c));
+      base.position.y = 0.3;
+      monitor.add(panel, screen, stand, base);
+      // Primary dead ahead; a second angles in from the right.
+      monitor.position.set(i === 0 ? 0 : 5.6, 0, -halfD + 1.0);
+      monitor.rotation.y = i === 0 ? 0 : -0.42;
+      monitor.name = i === 0 ? 'monitor' : 'monitor-secondary';
+      w.add(monitor);
+    }
+
     const kb = new THREE.Mesh(geo.box(4.4, 0.16, 1.5), mats.plastic(0x0f1216));
-    kb.position.set(0, 0.08, -2.4);
+    kb.position.set(0, 0.08, -halfD + 2.6);
     kb.castShadow = true;
     w.add(kb);
     for (let r = 0; r < 4; r++) {
       for (let k = 0; k < 16; k++) {
         const key = new THREE.Mesh(geo.box(0.2, 0.05, 0.2), mats.plastic(0x1c2026, 0.8));
-        key.position.set(-2 + k * 0.26, 0.17, -2.9 + r * 0.26);
+        key.position.set(-2 + k * 0.26, 0.17, -halfD + 2.1 + r * 0.26);
         w.add(key);
+      }
+    }
+
+    /* ---- pegboard of tools on the better benches -------------------- */
+    if (desk.pegboard) {
+      const board = new THREE.Mesh(geo.box(7.5, 3.4, 0.1), mats.plastic(0x1b2027, 0.9));
+      board.position.set(-halfW + 4.6, 2.6, -halfD + 0.35);
+      w.add(board);
+      for (let i = 0; i < 7; i++) {
+        const tool = new THREE.Mesh(
+          geo.box(0.16, 1.0 + (i % 3) * 0.35, 0.16),
+          mats.aluminium([0xb9c0cb, 0xd94f2b, 0x8c949e][i % 3])
+        );
+        tool.position.set(-halfW + 1.9 + i * 0.78, 2.9, -halfD + 0.48);
+        w.add(tool);
       }
     }
 
     // Backdrop wall so the scene is not floating in void.
     const wall = new THREE.Mesh(geo.plane(48, 26), mats.plastic(0x0a0d12, 1));
-    wall.position.set(0, 6, -12);
+    wall.position.set(0, 6, -halfD - 7);
     w.add(wall);
   }
 
@@ -235,13 +310,13 @@ export class SceneRoot {
 
   private buildLighting(): void {
     // A dark game still needs enough light to read shapes on a phone screen.
-    const ambient = new THREE.AmbientLight(0x6c7f9c, 1.15);
+    const ambient = new THREE.AmbientLight(0x6c7f9c, 1.0);
     this.scene.add(ambient);
 
-    const hemi = new THREE.HemisphereLight(0x8fb0d8, 0x141a22, 1.35);
+    const hemi = new THREE.HemisphereLight(0x8fb0d8, 0x141a22, 1.15);
     this.scene.add(hemi);
 
-    this.keyLight = new THREE.DirectionalLight(0xe8f2ff, 3.2);
+    this.keyLight = new THREE.DirectionalLight(0xe8f2ff, 2.7);
     this.keyLight.position.set(6, 11, 6);
     this.keyLight.target.position.set(0, 1.5, 0);
     this.scene.add(this.keyLight, this.keyLight.target);
@@ -256,8 +331,10 @@ export class SceneRoot {
     this.scene.add(fill);
 
     // A soft overhead bounce so the inside of the case is never pitch black.
-    const interior = new THREE.PointLight(0xbfd8ff, 26, 14, 2.1);
-    interior.position.set(2.4, 5.2, 1.6);
+    // Sits just above the chassis with a short range, so it fills the inside of
+    // the case without washing out the desk top underneath it.
+    const interior = new THREE.PointLight(0xbfd8ff, 14, 6.5, 2.1);
+    interior.position.set(PC_STAND_X + 0.9, 3.4, PC_STAND_Z + 0.5);
     this.scene.add(interior);
 
     // Accent point lights, dropped on lower quality.
@@ -297,7 +374,7 @@ export class SceneRoot {
       this.accentLights[i].intensity = i < p.accentLights ? 2.4 : 0;
     }
 
-    this.renderer.toneMappingExposure = p.bloom ? 1.32 : 1.2;
+    this.renderer.toneMappingExposure = p.bloom ? 1.26 : 1.14;
     this.handleResize();
   }
 
@@ -377,6 +454,16 @@ export class SceneRoot {
 
   get resolution(): number {
     return this.resolutionScale;
+  }
+
+  /** Swap the bench for a different one the player has bought. */
+  setDesk(id: string): void {
+    if (id === this.deskId) return;
+    this.buildDesk(getDesk(id));
+  }
+
+  get activeDeskId(): string {
+    return this.deskId;
   }
 
   /** Show the desk monitor as on/off with a given colour (§21). */

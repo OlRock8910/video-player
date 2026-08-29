@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import type { Screen, UIManager } from './UIManager';
 import { chip, el, iconButton } from './dom';
 import { settings } from '../core/Settings';
-import type { SceneRoot } from '../scene/SceneRoot';
+import { game } from '../core/GameManager';
+import { PC_STAND_X, PC_STAND_Z, type SceneRoot } from '../scene/SceneRoot';
 import type { BuildScene } from '../scene/BuildScene';
 
 type View = 'orbit' | 'front' | 'side' | 'internal' | 'top' | 'gpu' | 'cables';
@@ -55,7 +56,7 @@ export class ShowcaseScreen implements Screen {
     const bs = this.getBuildScene();
     const layout = bs.caseLayout;
     const size = layout ? Math.max(layout.height, layout.depth) : 5;
-    const centre = new THREE.Vector3(0, size * 0.46, 0);
+    const centre = new THREE.Vector3(PC_STAND_X, size * 0.46, PC_STAND_Z);
     const cam = this.scene.cameraController;
 
     switch (view) {
@@ -87,6 +88,7 @@ export class ShowcaseScreen implements Screen {
 
   onEnter(): void {
     this.scene.setWorkshopVisible(true);
+    this.scene.setDesk(game.deskId);
     const bs = this.getBuildScene();
     bs.setPowered(true);
     this.scene.cameraController.setLimits(1.2, 26);
