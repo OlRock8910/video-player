@@ -59,9 +59,6 @@ data class AppSettings(
     /** Off, and there is no code anywhere in the app that turns it on. */
     val analyticsEnabled: Boolean = false,
     val drinkingDaysPerWeek: Int = 0,
-    val acknowledgedAlcoholSafety: Boolean = false,
-    /** Highest money milestone already celebrated, so a party only happens once. */
-    val lastCelebratedMoneyUnits: Long = 0L,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "dads_victory_settings")
@@ -100,8 +97,6 @@ class SettingsStore(private val context: Context) {
         val JOURNAL_PIN_SALT = stringPreferencesKey("journal_pin_salt")
         val BIOMETRIC = booleanPreferencesKey("biometric_unlock")
         val HAS_PHOTO = booleanPreferencesKey("has_family_photo")
-        val DRINKING_ACK = booleanPreferencesKey("acknowledged_alcohol_safety")
-        val LAST_MONEY_CELEBRATION = longPreferencesKey("last_money_celebration")
 
         fun slotEnabled(slot: NotificationSlot) = booleanPreferencesKey("notif_${slot.id}_enabled")
         fun slotMinute(slot: NotificationSlot) = intPreferencesKey("notif_${slot.id}_minute")
@@ -156,8 +151,6 @@ class SettingsStore(private val context: Context) {
             hasFamilyPhoto = this[Keys.HAS_PHOTO] ?: false,
             analyticsEnabled = false,
             drinkingDaysPerWeek = this[Keys.DRINKING_DAYS] ?: 0,
-            acknowledgedAlcoholSafety = this[Keys.DRINKING_ACK] ?: false,
-            lastCelebratedMoneyUnits = this[Keys.LAST_MONEY_CELEBRATION] ?: 0L,
         )
     }
 
@@ -185,9 +178,6 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setDrinkingDaysPerWeek(days: Int) =
         context.dataStore.edit { it[Keys.DRINKING_DAYS] = days }
-
-    suspend fun setAcknowledgedAlcoholSafety(acknowledged: Boolean) =
-        context.dataStore.edit { it[Keys.DRINKING_ACK] = acknowledged }
 
     suspend fun setNotificationSlot(slot: NotificationSlot, enabled: Boolean, minuteOfDay: Int) =
         context.dataStore.edit {
@@ -236,12 +226,6 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setHasFamilyPhoto(has: Boolean) =
         context.dataStore.edit { it[Keys.HAS_PHOTO] = has }
-
-    suspend fun setLastCelebratedMoney(units: Long) =
-        context.dataStore.edit { it[Keys.LAST_MONEY_CELEBRATION] = units }
-
-    suspend fun setStartMillis(startMillis: Long) =
-        context.dataStore.edit { it[Keys.START_MILLIS] = startMillis }
 
     /** Used by "delete all my data". Leaves the app exactly as it was on first install. */
     suspend fun clearAll() = context.dataStore.edit { it.clear() }

@@ -284,17 +284,8 @@ class VictoryViewModel(application: Application) : AndroidViewModel(application)
 
     fun setHasFamilyPhoto(has: Boolean) = viewModelScope.launch { repository.settingsStore.setHasFamilyPhoto(has) }
 
-    fun setStartMillis(startMillis: Long) = viewModelScope.launch {
-        repository.settingsStore.setStartMillis(startMillis)
-    }
 
-    fun acknowledgeAlcoholSafety() = viewModelScope.launch {
-        repository.settingsStore.setAcknowledgedAlcoholSafety(true)
-    }
 
-    fun markMoneyCelebrated(units: Long) = viewModelScope.launch {
-        repository.settingsStore.setLastCelebratedMoney(units)
-    }
 
     // ---------------------------------------------------------------- backup
 

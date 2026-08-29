@@ -20,6 +20,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -62,6 +63,12 @@ fun JournalScreen(
 ) {
     val unlocked by viewModel.journalUnlocked.collectAsState()
     val locked = state.settings.journalLockEnabled && !unlocked
+
+    // Re-lock on the way out. A lock that stays open for the rest of the app
+    // session is not really a lock — leaving the screen should close it again.
+    DisposableEffect(Unit) {
+        onDispose { viewModel.lockJournal() }
+    }
 
     if (locked) {
         JournalLockScreen(viewModel, state, onBack = { navController.popBackStack() })

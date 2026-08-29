@@ -63,7 +63,7 @@ fun HelpScreen(
 
         item {
             SafetyBanner(
-                title = "I am in immediate danger",
+                title = Support.HelpRoute.DANGER.title,
                 body = Support.EMERGENCY_GUIDANCE,
                 action = {
                     if (emergency.phone != null) {
@@ -85,17 +85,20 @@ fun HelpScreen(
 
         item {
             SafetyBanner(
-                title = "I think I'm having dangerous withdrawal symptoms",
-                body = Support.ALCOHOL_WITHDRAWAL_WARNING + "\n\n" + Support.EMERGENCY_GUIDANCE,
+                title = Support.HelpRoute.WITHDRAWAL.title,
+                body = Support.HelpRoute.WITHDRAWAL.blurb + "\n\n" +
+                    Support.ALCOHOL_WITHDRAWAL_WARNING + "\n\n" + Support.EMERGENCY_GUIDANCE,
             )
         }
 
-        item { SectionHeader("I need someone to talk to") }
+        item { SectionHeader(Support.HelpRoute.TALK.title) }
+        item { InfoNote(Support.HelpRoute.TALK.blurb) }
         items(Support.ofKind(country, SupportContact.Kind.TALK), key = { it.id }) { contact ->
             ContactCard(contact, onDial = { dialNumber(context, it) }, onOpen = { openUrl(context, it) })
         }
 
-        item { SectionHeader("I need medical advice") }
+        item { SectionHeader(Support.HelpRoute.MEDICAL.title) }
+        item { InfoNote(Support.HelpRoute.MEDICAL.blurb) }
         items(Support.ofKind(country, SupportContact.Kind.URGENT), key = { it.id }) { contact ->
             ContactCard(contact, onDial = { dialNumber(context, it) }, onOpen = { openUrl(context, it) })
         }

@@ -34,8 +34,6 @@ interface CravingDao {
     @Query("SELECT COUNT(*) FROM cravings WHERE outcome = 'won'")
     fun observeDefeatedCount(): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM cravings WHERE outcome = 'won' AND atMillis >= :sinceMillis")
-    fun observeDefeatedSince(sinceMillis: Long): Flow<Int>
 
     @Query("SELECT * FROM cravings ORDER BY atMillis DESC")
     suspend fun getAll(): List<CravingEntity>
@@ -52,8 +50,6 @@ interface CheckInDao {
     @Query("SELECT * FROM check_ins ORDER BY epochDay DESC")
     fun observeAll(): Flow<List<CheckInEntity>>
 
-    @Query("SELECT * FROM check_ins WHERE epochDay >= :fromEpochDay ORDER BY epochDay ASC")
-    fun observeSince(fromEpochDay: Long): Flow<List<CheckInEntity>>
 
     @Query("SELECT * FROM check_ins WHERE epochDay = :epochDay")
     fun observeForDay(epochDay: Long): Flow<CheckInEntity?>
@@ -64,11 +60,6 @@ interface CheckInDao {
     @Query("SELECT * FROM check_ins ORDER BY epochDay ASC")
     suspend fun getAll(): List<CheckInEntity>
 
-    @Query("SELECT COUNT(*) FROM check_ins WHERE stayedAlcoholFree = 1")
-    fun observeAlcoholFreeDayCount(): Flow<Int>
-
-    @Query("SELECT COUNT(*) FROM check_ins WHERE stayedNicotineFree = 1")
-    fun observeNicotineFreeDayCount(): Flow<Int>
 
     @Upsert
     suspend fun upsert(checkIn: CheckInEntity)
@@ -85,8 +76,6 @@ interface JournalDao {
     @Query("SELECT * FROM journal ORDER BY createdAtMillis ASC")
     suspend fun getAll(): List<JournalEntity>
 
-    @Query("SELECT * FROM journal WHERE id = :id")
-    suspend fun getById(id: Long): JournalEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entry: JournalEntity): Long
