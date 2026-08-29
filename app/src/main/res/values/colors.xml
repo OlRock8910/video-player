@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warm neutral, so the app opens on something calm rather than stark white. -->
+    <color name="window_background">#FAF6F1</color>
+    <color name="icon_background">#0F1B2E</color>
+</resources>

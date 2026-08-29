@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Deep navy, matching the dark theme's surface. -->
+    <color name="window_background">#0B1420</color>
+    <color name="icon_background">#0F1B2E</color>
+</resources>

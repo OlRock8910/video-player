@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  "Every day is another step upward."
+
+  A sun rising behind a mountain ridge. Drawn in the adaptive-icon safe zone
+  (the middle 72dp of 108dp) so no launcher shape can crop the peaks off.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- The sun, behind everything. -->
+    <path
+        android:fillColor="#F6B26B"
+        android:pathData="M39,50 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 Z" />
+
+    <!-- Far ridge. -->
+    <path
+        android:fillColor="#4E7093"
+        android:pathData="M14,84 L36,56 L52,74 L70,50 L94,84 Z" />
+
+    <!-- Near ridge, lighter, so the two read as separate peaks in a small icon. -->
+    <path
+        android:fillColor="#9FC2E0"
+        android:pathData="M14,84 L34,62 L56,84 Z" />
+
+    <!-- Ground line, to sit the mountains on something. -->
+    <path
+        android:fillColor="#2C4664"
+        android:pathData="M12,84 L96,84 L96,90 L12,90 Z" />
+</vector>

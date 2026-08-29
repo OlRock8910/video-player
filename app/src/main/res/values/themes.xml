@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The whole interface is drawn by Compose, so this theme only has to hand the
+      window over without a flash of the wrong colour. The matching values-night
+      file swaps the background so the launch is dark when the phone is dark.
+    -->
+    <style name="Theme.DadsVictory" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
