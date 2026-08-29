@@ -54,8 +54,6 @@ interface CheckInDao {
     @Query("SELECT * FROM check_ins WHERE epochDay = :epochDay")
     fun observeForDay(epochDay: Long): Flow<CheckInEntity?>
 
-    @Query("SELECT * FROM check_ins WHERE epochDay = :epochDay")
-    suspend fun getForDay(epochDay: Long): CheckInEntity?
 
     @Query("SELECT * FROM check_ins ORDER BY epochDay ASC")
     suspend fun getAll(): List<CheckInEntity>
