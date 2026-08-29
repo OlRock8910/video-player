@@ -372,8 +372,23 @@ export class WorkshopScreen implements Screen {
       this.frameCase();
     }
     if (!immediate) {
-      toast(step.label, 'info', step.instruction);
+      // The step panel already shows this step's label and instruction, so a
+      // toast would print the same two lines a second time directly beneath
+      // it. Flash the panel instead: same "something changed" cue, no
+      // duplicate text competing for a phone-sized screen.
+      this.flashStepPanel();
     }
+  }
+
+  /** Pulse the step panel so a step change is noticed without restating it. */
+  private flashStepPanel(): void {
+    const panel = this.stepLabel?.parentElement;
+    if (!panel) return;
+    panel.classList.remove('flash');
+    // Force a reflow, otherwise removing and re-adding within one frame is a
+    // no-op and the animation never restarts on consecutive steps.
+    void panel.offsetWidth;
+    panel.classList.add('flash');
   }
 
   /* ---------------------------------------------------------------- */

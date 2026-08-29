@@ -609,6 +609,32 @@ button {
   transition: opacity 0.3s ease;
 }
 
+/*
+ * Step changes flash the panel rather than raising a toast that repeats it.
+ * Border and background only — moving the panel would shift the instruction
+ * the player is mid-way through reading.
+ */
+.hud-steps.flash {
+  animation: step-flash 0.9s ease-out;
+}
+
+/*
+ * Outline rather than border or box-shadow: the panel already sets both, and
+ * animating those would have to land back on their exact resting values or
+ * the panel pops when the animation ends. A transparent outline is invisible,
+ * so there is nothing to restore, and outline never affects layout.
+ */
+@keyframes step-flash {
+  0% {
+    outline: 2px solid var(--accent);
+    outline-offset: 0;
+  }
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 5px;
+  }
+}
+
 .step-label {
   font-size: 0.68rem;
   letter-spacing: 0.2em;
