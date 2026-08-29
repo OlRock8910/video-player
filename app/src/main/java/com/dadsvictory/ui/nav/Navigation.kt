@@ -4,9 +4,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -73,9 +73,9 @@ private data class Tab(
 
 private val TABS = listOf(
     Tab(Routes.HOME, "Home", Icons.Filled.Home),
-    Tab(Routes.PROGRESS, "Progress", Icons.Filled.TrendingUp),
+    Tab(Routes.PROGRESS, "Progress", Icons.AutoMirrored.Filled.TrendingUp),
     Tab(Routes.CRAVING, "Cravings", Icons.Filled.LocalFireDepartment),
-    Tab(Routes.FAITH, "Faith", Icons.Filled.MenuBook),
+    Tab(Routes.FAITH, "Faith", Icons.AutoMirrored.Filled.MenuBook),
     Tab(Routes.SETTINGS, "Settings", Icons.Filled.Settings),
 )
 

@@ -104,8 +104,23 @@ object Notifications {
             )
         }
 
-        runCatching {
+        // The permission is re-checked inline here rather than only through
+        // hasPermission() above: lint cannot follow the guard through a helper, and
+        // it is right to insist — the check and the call want to be next to each
+        // other so a future edit cannot separate them. The catch covers the gap
+        // where permission is revoked between the two.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        try {
             NotificationManagerCompat.from(context).notify(slot.ordinal, builder.build())
+        } catch (_: SecurityException) {
+            // Permission was revoked between the check and the call. Nothing to do:
+            // a missed encouragement must never crash the app.
         }
     }
 }

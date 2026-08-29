@@ -62,10 +62,6 @@ jobs:
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
-      - name: Run Android lint
-        run: ./gradlew :app:lintDebug --no-daemon
-        continue-on-error: true
-
       - name: Name the APK something recognisable
         run: |
           mkdir -p out
@@ -79,6 +75,16 @@ jobs:
           name: DadsVictory-apk
           path: out/DadsVictory.apk
           if-no-files-found: error
+
+      # Lint runs after the upload and is allowed to fail the run. Ordering it this
+      # way means a lint regression is loud, but the APK from that same commit is
+      # still downloadable rather than being lost with the job.
+      - name: Run Android lint
+        run: ./gradlew :app:lintDebug --no-daemon
+
+      - name: Show the lint findings
+        if: failure()
+        run: cat app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt || true
 
       - name: Upload lint report
         if: always()
