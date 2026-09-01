@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Vinyl record: outer disc, two grooves, centre label and spindle hole. -->
+    <path
+        android:fillColor="#FF111111"
+        android:pathData="M54,27c-14.91,0 -27,12.09 -27,27s12.09,27 27,27 27,-12.09 27,-27S68.91,27 54,27zM54,73c-10.49,0 -19,-8.51 -19,-19s8.51,-19 19,-19 19,8.51 19,19 -8.51,19 -19,19z" />
+    <path
+        android:fillColor="#FF111111"
+        android:pathData="M54,39c-8.28,0 -15,6.72 -15,15s6.72,15 15,15 15,-6.72 15,-15 -6.72,-15 -15,-15zM54,65c-6.08,0 -11,-4.92 -11,-11s4.92,-11 11,-11 11,4.92 11,11 -4.92,11 -11,11z" />
+    <path
+        android:fillColor="#FFFF6A00"
+        android:pathData="M54,45c-4.97,0 -9,4.03 -9,9s4.03,9 9,9 9,-4.03 9,-9 -4.03,-9 -9,-9zM54,56.5c-1.38,0 -2.5,-1.12 -2.5,-2.5s1.12,-2.5 2.5,-2.5 2.5,1.12 2.5,2.5 -1.12,2.5 -2.5,2.5z" />
+</vector>
