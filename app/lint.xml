@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!--
+      Media3 marks most of its surface @UnstableApi, including MediaSessionService
+      and BitmapLoader, which this app is built on. Opting in here rather than
+      annotating individual classes: annotating a class propagates the opt-in to
+      everything that touches it, so marking MainActivity would push the same
+      requirement onto every composable that takes it as a parameter.
+    -->
+    <issue id="UnsafeOptInUsageError">
+        <option name="opt-in" value="androidx.media3.common.util.UnstableApi" />
+    </issue>
+</lint>
