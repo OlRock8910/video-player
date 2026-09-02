@@ -17,59 +17,72 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 
 /**
- * Mono's palette: paper-white behind, white cards on top, near-black ink, and
- * a single orange accent borrowed from the record label in the app icon.
+ * Mono's palette. Ink on paper in daylight, and a set of near-blacks at night
+ * that are layered rather than flat — the page sits below the cards, the cards
+ * below the controls — so depth comes from value rather than from borders.
+ * One orange accent, taken from the record label in the app icon.
  */
 object MonoColors {
-    val Ink = Color(0xFF111111)
-    val Paper = Color(0xFFF1F1F1)
-    val Card = Color(0xFFFFFFFF)
-    val Muted = Color(0xFF6B6B6B)
-    val Line = Color(0xFFE2E2E2)
-    val Chip = Color(0xFFEDEDED)
     val Accent = Color(0xFFFF6A00)
 
-    val DarkPaper = Color(0xFF0E0E0E)
-    val DarkCard = Color(0xFF1A1A1A)
-    val DarkLine = Color(0xFF2A2A2A)
-    val DarkMuted = Color(0xFFA0A0A0)
+    val Paper = Color(0xFFF4F4F5)
+    val Card = Color(0xFFFFFFFF)
+    val Raised = Color(0xFFE9E9EC)
+    val Ink = Color(0xFF111113)
+    val Muted = Color(0xFF6E6E76)
+    val Line = Color(0xFFE2E2E6)
+
+    val NightPage = Color(0xFF0A0A0B)
+    val NightCard = Color(0xFF151517)
+    val NightRaised = Color(0xFF1F1F23)
+    val NightInk = Color(0xFFF2F2F3)
+    val NightMuted = Color(0xFF9A9AA0)
+    val NightLine = Color(0xFF2A2A2F)
 }
 
 private val LightScheme = lightColorScheme(
     primary = MonoColors.Ink,
-    onPrimary = Color.White,
+    onPrimary = MonoColors.Paper,
     secondary = MonoColors.Accent,
     onSecondary = Color.White,
     background = MonoColors.Paper,
     onBackground = MonoColors.Ink,
     surface = MonoColors.Card,
     onSurface = MonoColors.Ink,
-    surfaceVariant = MonoColors.Chip,
+    surfaceVariant = MonoColors.Raised,
     onSurfaceVariant = MonoColors.Muted,
     outline = MonoColors.Line,
 )
 
 private val DarkScheme = darkColorScheme(
-    primary = Color.White,
-    onPrimary = MonoColors.Ink,
+    primary = MonoColors.NightInk,
+    onPrimary = MonoColors.NightPage,
     secondary = MonoColors.Accent,
     onSecondary = Color.White,
-    background = MonoColors.DarkPaper,
-    onBackground = Color.White,
-    surface = MonoColors.DarkCard,
-    onSurface = Color.White,
-    surfaceVariant = MonoColors.DarkCard,
-    onSurfaceVariant = MonoColors.DarkMuted,
-    outline = MonoColors.DarkLine,
+    background = MonoColors.NightPage,
+    onBackground = MonoColors.NightInk,
+    surface = MonoColors.NightCard,
+    onSurface = MonoColors.NightInk,
+    surfaceVariant = MonoColors.NightRaised,
+    onSurfaceVariant = MonoColors.NightMuted,
+    outline = MonoColors.NightLine,
 )
 
+/**
+ * Tightened from the first pass, where everything was extra-bold and a few
+ * points too large: headings crowded the controls beside them and song titles
+ * were truncating at six or seven characters. Weight now carries the hierarchy
+ * and size stays close to the text it labels.
+ */
 private val MonoTypography = Typography(
-    headlineLarge = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp),
-    headlineMedium = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp),
-    titleMedium = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold),
-    bodyMedium = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Medium),
-    bodySmall = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium),
+    headlineLarge = TextStyle(fontSize = 25.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp),
+    headlineMedium = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp),
+    titleLarge = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp),
+    titleMedium = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+    bodyMedium = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Normal),
+    bodySmall = TextStyle(fontSize = 12.5.sp, fontWeight = FontWeight.Normal),
     labelMedium = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+    labelSmall = TextStyle(fontSize = 11.5.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.4.sp),
 )
 
 @Composable

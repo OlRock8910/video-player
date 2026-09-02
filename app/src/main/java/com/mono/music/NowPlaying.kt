@@ -189,31 +189,34 @@ fun NowPlayingBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onExpand),
     ) {
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier.fillMaxWidth().height(2.dp),
-            color = MaterialTheme.colorScheme.onSurface,
-            trackColor = MaterialTheme.colorScheme.outline,
+            color = MonoColors.Accent,
+            trackColor = Color.Transparent,
             drawStopIndicator = {},
         )
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 9.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AlbumArt(song, modifier = Modifier.size(46.dp))
+            AlbumArt(song, modifier = Modifier.size(46.dp), corner = 12)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     song.title,
                     style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    "${formatClock(positionMs)} / ${formatClock(durationMs)}  ·  ${song.artist}",
+                    "${formatClock(positionMs)} / ${formatClock(durationMs)} · ${song.artist}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -224,10 +227,15 @@ fun NowPlayingBar(
                 Icon(
                     if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (playing) "Pause" else "Play",
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
             IconButton(onClick = onNext) {
-                Icon(Icons.Filled.SkipNext, contentDescription = "Next")
+                Icon(
+                    Icons.Filled.SkipNext,
+                    contentDescription = "Next",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
             }
         }
     }

@@ -301,6 +301,14 @@ class MainActivity : ComponentActivity() {
         controller.play()
     }
 
+    /** Turns shuffle on and drops into the list at a random point. */
+    fun playShuffled(list: List<Song>) {
+        if (list.isEmpty()) return
+        shuffle = true
+        store.shuffle = true
+        playFrom(list, list.random())
+    }
+
     fun togglePlay() {
         val controller = player ?: return
         when {

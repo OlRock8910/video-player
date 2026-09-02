@@ -137,6 +137,15 @@ class Store(context: Context) {
         save(json)
     }
 
+    /** Replaces a playlist's contents wholesale — used to shuffle its order. */
+    fun setPlaylist(name: String, docIds: List<String>) {
+        val json = raw()
+        val array = JSONArray()
+        for (id in docIds) array.put(id)
+        json.put(name, array)
+        save(json)
+    }
+
     fun removeFromPlaylist(name: String, docId: String) {
         val json = raw()
         val array = json.optJSONArray(name) ?: return

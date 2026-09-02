@@ -19,7 +19,18 @@ playback service instead.
 | Cover art | Every cover halved before display | Decoded to fit what is on screen, cached at up to 1024px |
 | Now playing | A bar at the bottom | Full screen: the cover as a turning record over a blurred backdrop |
 | Suggestions | — | A **For you** tab built from your own listening |
+| Playlists | One track at a time | Long-press to multi-select, then add or shuffle in bulk |
 | Other audio | Audio focus was requested | Unchanged, and now correct: pausing no longer loses the queue |
+
+### Building playlists
+
+Long-press any track to start selecting; tap to add more. The header becomes a
+selection bar — select all, play, shuffle, or add the lot to a playlist. Adding
+to a playlist that does not exist yet creates it with those tracks already in.
+
+Every list has both **Play** and **Shuffle**. A playlist's own order can be
+randomised for good from its overflow menu (**Shuffle order**), which rewrites
+the stored order rather than only the current queue.
 
 ### For you
 
