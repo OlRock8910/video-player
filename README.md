@@ -73,6 +73,11 @@ Mono also runs as a desktop app. It is a web app, but an installed one: its own
 window, no address bar, an icon you can pin to the taskbar and the Start menu,
 and it works with the network off.
 
+> **One-time repo setting.** GitHub Pages has to be switched on by hand before
+> the first deploy: **Settings → Pages → Build and deployment → Source →
+> GitHub Actions**. The workflow token is not permitted to create the site
+> itself. After that, every push to `web/` deploys on its own.
+
 **Install it** in Chrome or Edge:
 
 1. Open **https://olrock8910.github.io/video-player/**
