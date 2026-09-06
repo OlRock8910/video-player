@@ -1,0 +1,75 @@
+name: Deploy Mono web app
+
+# Publishes web/ to GitHub Pages, which is what makes Mono installable: Chrome
+# and Edge only offer "Install" for a page served over HTTPS.
+#
+# Lands at https://olrock8910.github.io/video-player/
+
+on:
+  push:
+    branches: ["claude/music-mini-app-g670lf"]
+    paths:
+      - "web/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time, and never cancel one that is mid-flight.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the app shell is complete
+        # The service worker pre-caches this list by hand, so a file added to
+        # web/ but missed there would break offline start-up silently. Cheap to
+        # verify here rather than discover on a plane.
+        run: |
+          set -eu
+          listed=$(sed -n '/const SHELL = \[/,/^\];/p' web/sw.js \
+            | grep -oE '"\./[^"]*"' | tr -d '"' | sed 's|^\./||' | grep -v '^$')
+
+          missing=0
+          for file in $listed; do
+            if [ ! -e "web/$file" ]; then
+              echo "::error::sw.js pre-caches web/$file, which does not exist"
+              missing=1
+            fi
+          done
+          # sw.js is deliberately absent: a worker that pre-caches itself can
+          # keep serving its own stale copy and never pick up a deploy.
+          for file in $(cd web && ls *.js *.css *.html lib/*.js | grep -v '^sw\.js$'); do
+            if ! printf '%s\n' $listed | grep -qx "$file"; then
+              echo "::error::web/$file is not pre-cached by sw.js"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Enable and configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Where it went
+        run: echo "Installable at ${{ steps.deployment.outputs.page_url }}"
