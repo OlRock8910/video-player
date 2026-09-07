@@ -3,7 +3,7 @@
 // so the only thing this holds is the few files that make up the interface.
 //
 // Bump CACHE when any shell file changes; the old cache is dropped on activate.
-const CACHE = "mono-shell-v4";
+const CACHE = "mono-shell-v5";
 
 const SHELL = [
   "./",

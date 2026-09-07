@@ -88,11 +88,13 @@ function showWelcome(note, fatal = false, reconnect = false) {
   noteEl.hidden = !note;
   noteEl.textContent = note || "";
   button.onclick = reconnect ? reconnectFolder : chooseFolder;
+  renderInstallButton();
 }
 
 function showShell() {
   $("welcome").hidden = true;
   $("shell").hidden = false;
+  renderInstallButton();
 }
 
 async function chooseFolder() {
@@ -218,16 +220,21 @@ function wireChrome() {
   });
 }
 
+/**
+ * Offers the install prompt wherever the eye already is: beside the Choose
+ * folder button before a folder is picked, and in the header afterwards. The
+ * first version only ever put it in the header, which is hidden on the welcome
+ * screen — exactly where someone opening Mono for the first time is looking.
+ */
 function renderInstallButton() {
-  const existing = $("install-btn");
-  if (!installPrompt) {
-    existing?.remove();
-    return;
-  }
-  if (existing) return;
-  const button = el("button.pill.pill-filled.small", {
+  $("install-btn")?.remove();
+  if (!installPrompt) return;
+
+  const onWelcome = !$("welcome").hidden;
+  const button = el("button.pill.pill-filled", {
     id: "install-btn",
-    text: "Install",
+    class: onWelcome ? "" : "small",
+    text: onWelcome ? "Install as an app" : "Install",
     onclick: async () => {
       installPrompt.prompt();
       await installPrompt.userChoice;
@@ -235,7 +242,15 @@ function renderInstallButton() {
       renderInstallButton();
     },
   });
-  $("chrome").append(button);
+
+  if (onWelcome) {
+    const note = $("welcome-note");
+    note.hidden = false;
+    note.textContent = note.textContent || "Installs to your taskbar and Start menu. Works offline.";
+    note.before(button);
+  } else {
+    $("chrome").append(button);
+  }
 }
 
 function wireKeyboard() {
