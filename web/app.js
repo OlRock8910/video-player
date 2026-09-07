@@ -40,6 +40,24 @@ let player;
 let folderHandle = null;
 let installPrompt = null;
 
+/*
+  Chrome fires beforeinstallprompt as soon as the install criteria are met,
+  which on a repeat visit — service worker already active — can be before an
+  async boot() has finished awaiting IndexedDB. Registered here at module scope,
+  before the first await, so the event cannot land in that gap and be lost.
+*/
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  renderInstallButton();
+});
+
+window.addEventListener("appinstalled", () => {
+  installPrompt = null;
+  renderInstallButton();
+  toast("Mono installed");
+});
+
 // --- Boot -----------------------------------------------------------------
 
 async function boot() {
@@ -206,18 +224,6 @@ function wireChrome() {
     if (player.current) toggleLike(player.current);
   };
 
-  // Offered by Chrome and Edge when the app is installable; clicking it is what
-  // puts the icon on the taskbar and in the Start menu.
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    installPrompt = event;
-    renderInstallButton();
-  });
-  window.addEventListener("appinstalled", () => {
-    installPrompt = null;
-    renderInstallButton();
-    toast("Mono installed");
-  });
 }
 
 /**
