@@ -874,3 +874,211 @@ input[type="range"]::-webkit-slider-thumb {
   #bar-prev, #bar-like { display: none; }
   .list-head h2 { font-size: 21px; }
 }
+
+/* --- Stats --------------------------------------------------------------- */
+
+/*
+  One series throughout, so the chart needs no legend and no categorical
+  palette. --chart is a step down from the interface accent: the brand orange
+  sits above the dark-mode lightness band and under-contrasts on white, while
+  this step passes the lightness, chroma and 3:1 contrast checks on both
+  surfaces.
+*/
+:root { --chart: #e55f00; }
+
+.periods {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 14px;
+  scrollbar-width: none;
+}
+
+.periods::-webkit-scrollbar { display: none; }
+
+.stat-label {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.stat-hero { margin-bottom: 18px; }
+
+.hero-figure {
+  font-size: 50px;
+  font-weight: 800;
+  letter-spacing: -1.6px;
+  line-height: 1.05;
+  margin-top: 2px;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.tile {
+  background: var(--card);
+  border-radius: var(--radius-row);
+  padding: 14px 16px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin-top: 3px;
+}
+
+.stat-note {
+  color: var(--muted);
+  font-size: 11.5px;
+  margin-top: 2px;
+}
+
+.chart { margin-bottom: 28px; }
+
+.chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.chart-head h3 { font-size: 17px; font-weight: 700; }
+
+.plot-wrap { position: relative; }
+
+.plot {
+  display: flex;
+  align-items: flex-end;
+  /* The surface gap that separates touching columns — 2px of page, no strokes. */
+  gap: 2px;
+  height: 172px;
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  /* Fixed rows: the plot takes the slack, the tick is the same height in every
+     column, so the baseline runs straight across whatever a column contains. */
+  grid-template-rows: 1fr auto;
+  border-radius: 6px;
+  outline-offset: -2px;
+}
+
+.col-plot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 0;
+  /* Headroom for the peak column's value label. */
+  padding-top: 20px;
+}
+
+.column:hover, .column:focus-visible { background: color-mix(in srgb, var(--chart) 9%, transparent); }
+
+.col-bar {
+  position: relative;
+  width: 100%;
+  max-width: 24px; /* never a slab; the band's leftover stays as air */
+  background: var(--chart);
+  /* Rounded at the data end, square on the baseline it grows from. */
+  border-radius: 4px 4px 0 0;
+  transition: height 0.2s ease;
+}
+
+.col-value {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.tick {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  border-top: 1px solid var(--line); /* the baseline, hairline and recessive */
+  width: 100%;
+  text-align: center;
+  padding-top: 5px;
+  min-height: 20px;
+  overflow: hidden;
+}
+
+.chart-tip {
+  position: absolute;
+  top: -6px;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--page);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 5;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.data-table th, .data-table td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table th { color: var(--muted); font-weight: 600; }
+.data-table td:last-child, .data-table th:last-child { text-align: right; }
+
+.row.stat-row { cursor: default; padding: 12px 14px; }
+.row.stat-row:hover { background: var(--card); }
+
+/* A magnitude bar beside each row: same hue, same job as the chart. */
+.meter {
+  flex: 0 0 34%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--raised);
+  overflow: hidden;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--chart);
+}
+
+.row-time {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 74px;
+  text-align: right;
+}
+
+@media (max-width: 560px) {
+  .hero-figure { font-size: 38px; }
+  .meter { display: none; }
+}

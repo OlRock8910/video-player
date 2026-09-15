@@ -27,19 +27,28 @@ export class Player {
     this.objectUrl = null;
     this.countedPath = null;
 
+    // Time actually spent listening to the current track, measured on the wall
+    // clock while audio is playing. Track length would over-count anyone who
+    // skips; currentTime would over-count a seek to the end.
+    this.listenedMs = 0;
+    this.lastTick = null;
+
     this.audio.volume = store.volume;
 
     audio.addEventListener("ended", () => this.advance(true));
     audio.addEventListener("play", () => {
+      this.lastTick = Date.now();
       this.updateSessionState();
       onChange();
     });
     audio.addEventListener("pause", () => {
+      this.flushListening();
       this.saveResume();
       this.updateSessionState();
       onChange();
     });
     audio.addEventListener("timeupdate", () => {
+      this.tickListening();
       this.countPlayIfStarted();
       onChange("tick");
     });
@@ -52,7 +61,32 @@ export class Player {
       if (this.current) this.advance(true);
     });
 
+    window.addEventListener("pagehide", () => this.flushListening());
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") this.flushListening();
+    });
+
     this.wireMediaKeys();
+  }
+
+  /** Adds the time since the last tick, ignoring gaps a sleeping machine leaves. */
+  tickListening() {
+    const now = Date.now();
+    if (this.lastTick !== null && this.playing) {
+      const delta = now - this.lastTick;
+      if (delta > 0 && delta < 5000) this.listenedMs += delta;
+    }
+    this.lastTick = now;
+  }
+
+  /** Writes what has accrued for the current track to the log and resets. */
+  flushListening() {
+    this.tickListening();
+    if (this.current && this.listenedMs > 0) {
+      this.store.logListening(this.current.path, this.listenedMs);
+    }
+    this.listenedMs = 0;
+    this.lastTick = null;
   }
 
   get playing() {
@@ -93,6 +127,7 @@ export class Player {
     const song = this.queue[index];
     if (!song) return;
 
+    this.flushListening();
     this.current = song;
     this.countedPath = null;
     this.onChange();

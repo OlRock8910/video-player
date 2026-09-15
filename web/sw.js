@@ -3,7 +3,7 @@
 // so the only thing this holds is the few files that make up the interface.
 //
 // Bump CACHE when any shell file changes; the old cache is dropped on activate.
-const CACHE = "mono-shell-v6";
+const CACHE = "mono-shell-v7";
 
 const SHELL = [
   "./",
@@ -15,6 +15,7 @@ const SHELL = [
   "./lib/library.js",
   "./lib/player.js",
   "./lib/recommend.js",
+  "./lib/stats.js",
   "./lib/ui.js",
   "./lib/icons.js",
   "./manifest.webmanifest",

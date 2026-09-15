@@ -106,6 +106,18 @@ make sense on a desktop:
 - **Right-click** any track or playlist for its menu; `Ctrl`-click and
   `Shift`-click to build a selection.
 
+### Listening stats
+
+A **Stats** tab: time listened, songs played, different tracks, days listened and
+a daily average, over Today / 7 days / 30 days / 12 months / all time, with a
+column chart of when you listened and your top five songs and artists.
+
+Time is counted on the wall clock **while audio is actually playing**, not by
+track length, so skipping through an album does not bank forty minutes. Pausing
+and resuming the same track stays one play. This needed a new append-only play
+log — the old counters recorded only a total and a last-played date per track,
+which cannot answer "this week".
+
 ### Two limits worth knowing
 
 - **Chrome or Edge only.** Reading a folder needs the File System Access API,

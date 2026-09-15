@@ -10,6 +10,7 @@
 import { Store } from "./lib/store.js";
 import { scanFolder, artUrl, formatClock, formatLong, forgetArt } from "./lib/library.js";
 import { sections as buildSections } from "./lib/recommend.js";
+import { PERIODS, rangeFor, summarise, formatSpan } from "./lib/stats.js";
 import { Player } from "./lib/player.js";
 import { $, el, clear, toast, contextMenu, setArt } from "./lib/ui.js";
 import { icon, setIcon } from "./lib/icons.js";
@@ -21,11 +22,13 @@ const TABS = [
   { id: "songs", label: "Songs" },
   { id: "artists", label: "Artists" },
   { id: "playlists", label: "Playlists" },
+  { id: "stats", label: "Stats" },
 ];
 
 const state = {
   songs: [],
   tab: "foryou",
+  period: "week",
   query: "",
   selection: new Set(),
   lastClicked: -1,
@@ -435,6 +438,7 @@ function renderContent() {
   if (state.tab === "foryou") renderForYou(main);
   else if (state.tab === "songs") renderSongList(main, { title: "Songs", songs: matchingSongs() });
   else if (state.tab === "artists") renderArtists(main);
+  else if (state.tab === "stats") renderStats(main);
   else renderPlaylists(main);
 }
 
@@ -1003,3 +1007,197 @@ function registerServiceWorker() {
 }
 
 boot();
+
+// --- Stats ----------------------------------------------------------------
+
+/**
+ * What you listened to, over a window you pick.
+ *
+ * One hero figure (the total), a row of stat tiles, one column chart of time
+ * per bucket, then the two top-five lists. The chart is a single series, so it
+ * carries no legend — the heading above it says what is plotted — and only the
+ * busiest column is labelled directly; the rest is on hover and in the table.
+ */
+function renderStats(main) {
+  const plays = store.plays;
+  const { from, to, unit } = rangeFor(state.period, plays);
+  const summary = summarise({ plays, songs: state.songs, from, to, unit });
+
+  const filters = el("div.periods");
+  for (const period of PERIODS) {
+    filters.append(
+      el("button.tab", {
+        text: period.label,
+        "aria-selected": String(state.period === period.id),
+        onclick: () => {
+          state.period = period.id;
+          render();
+        },
+      }),
+    );
+  }
+
+  main.append(
+    el(
+      "div.list-head",
+      {},
+      el("h2", { text: "Listening" }),
+      el("p.list-sub", { text: "Counted while audio is actually playing, not by track length." }),
+    ),
+    filters,
+  );
+
+  if (!summary.playCount) {
+    main.append(
+      el("p.empty", {
+        text:
+          state.period === "all"
+            ? "Nothing logged yet. Play something and it will show up here."
+            : "Nothing played in this period.",
+      }),
+    );
+    return;
+  }
+
+  const perActiveDay = summary.activeDays ? summary.totalMs / summary.activeDays : 0;
+
+  main.append(
+    el(
+      "section.stat-hero",
+      {},
+      el("p.stat-label", { text: "Time listened" }),
+      el("p.hero-figure", { text: formatSpan(summary.totalMs) }),
+    ),
+    el(
+      "section.kpis",
+      {},
+      statTile("Songs played", String(summary.playCount)),
+      statTile("Different tracks", String(summary.uniqueCount)),
+      statTile("Days listened", String(summary.activeDays)),
+      statTile("Average a day", formatSpan(perActiveDay), "on days you listened"),
+    ),
+    columnChart(summary.buckets),
+    topList("Top songs", summary.topTracks, (entry) => entry.title, (entry) => entry.artist),
+    topList("Top artists", summary.topArtists, (entry) => entry.artist, (entry) =>
+      `${entry.count} ${entry.count === 1 ? "play" : "plays"}`),
+  );
+}
+
+function statTile(label, value, note) {
+  return el(
+    "div.tile",
+    {},
+    el("p.stat-label", { text: label }),
+    el("p.stat-value", { text: value }),
+    note ? el("p.stat-note", { text: note }) : null,
+  );
+}
+
+/**
+ * Time per bucket. Bars are capped in width so a short period does not render
+ * slabs, separated by a 2px gap in the surface colour rather than by strokes,
+ * and rounded only at the data end.
+ */
+function columnChart(buckets) {
+  const peak = Math.max(...buckets.map((b) => b.ms), 1);
+  const peakIndex = buckets.findIndex((b) => b.ms === peak);
+
+  // Label every nth column so ticks never collide on a narrow window.
+  const step = buckets.length <= 12 ? 1 : Math.ceil(buckets.length / 8);
+
+  const tip = el("div.chart-tip", { hidden: true });
+  const plot = el("div.plot");
+
+  buckets.forEach((bucket, index) => {
+    const height = (bucket.ms / peak) * 100;
+    // The value rides the bar itself rather than sitting in the column's flow,
+    // so labelling the peak cannot shift that column's baseline out of line
+    // with its neighbours.
+    const bar = el(
+      "span.col-bar",
+      { style: `height:${bucket.ms > 0 ? Math.max(height, 1.5) : 0}%` },
+      index === peakIndex && bucket.ms > 0
+        ? el("span.col-value", { text: formatSpan(bucket.ms) })
+        : null,
+    );
+
+    const column = el(
+      "div.column",
+      {
+        tabindex: "0",
+        "aria-label": `${bucket.label}: ${formatSpan(bucket.ms)}`,
+        onpointerenter: () => showTip(),
+        onfocus: () => showTip(),
+        onpointerleave: () => {
+          tip.hidden = true;
+        },
+        onblur: () => {
+          tip.hidden = true;
+        },
+      },
+      el("span.col-plot", {}, bar),
+      el("span.tick", {
+        text: index % step === 0 || index === buckets.length - 1 ? bucket.label : "",
+      }),
+    );
+    plot.append(column);
+
+    function showTip() {
+      tip.hidden = false;
+      tip.textContent = `${bucket.label} · ${formatSpan(bucket.ms)}`;
+      const left = ((index + 0.5) / buckets.length) * 100;
+      tip.style.left = `${Math.min(92, Math.max(8, left))}%`;
+    }
+  });
+
+  const table = el("table.data-table", { hidden: true });
+  table.append(
+    el("thead", {}, el("tr", {}, el("th", { text: "Period" }), el("th", { text: "Listened" }))),
+    el(
+      "tbody",
+      {},
+      buckets.map((bucket) =>
+        el("tr", {}, el("td", { text: bucket.label }), el("td", { text: formatSpan(bucket.ms) })),
+      ),
+    ),
+  );
+
+  const toggle = el("button.ghost", {
+    text: "Show data",
+    onclick: () => {
+      table.hidden = !table.hidden;
+      toggle.textContent = table.hidden ? "Show data" : "Hide data";
+    },
+  });
+
+  return el(
+    "section.chart",
+    {},
+    el("div.chart-head", {}, el("h3", { text: "When you listened" }), toggle),
+    el("div.plot-wrap", {}, tip, plot),
+    table,
+  );
+}
+
+function topList(title, entries, primary, secondary) {
+  if (!entries.length) return null;
+  const peak = entries[0].ms || 1;
+  const rows = el("div.rows");
+  for (const entry of entries) {
+    rows.append(
+      el(
+        "div.row.stat-row",
+        {},
+        el(
+          "div.row-text",
+          {},
+          el("div.row-title", { text: primary(entry) }),
+          el("div.row-sub", { text: secondary(entry) }),
+        ),
+        el("div.meter", {}, el("span", { style: `width:${(entry.ms / peak) * 100}%` })),
+        el("div.row-time", { text: formatSpan(entry.ms) }),
+      ),
+    );
+  }
+  return el("section.section", {}, el("div.section-head", {}, el("div", {}, el("h3", { text: title }))), rows);
+}

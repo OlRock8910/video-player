@@ -49,8 +49,15 @@ export const idb = {
   clear: (store) => tx(store, "readwrite", (s) => s.clear()),
 };
 
+/** A pause longer than this starts a new entry rather than extending the last. */
+const RESUME_WINDOW_MS = 30 * 60 * 1000;
+
+/** Roughly a year of heavy listening; older entries are dropped. */
+const MAX_PLAY_LOG = 20000;
+
 const DEFAULTS = {
   likes: [],
+  plays: [],
   playCounts: {},
   lastPlayed: {},
   playlists: {},
@@ -114,6 +121,34 @@ export class Store {
     this.data.playCounts[path] = (this.data.playCounts[path] || 0) + 1;
     this.data.lastPlayed[path] = Date.now();
     this.save();
+  }
+
+  /**
+   * Appends time actually spent listening to a track.
+   *
+   * Pausing and resuming the same track lands back in the previous entry rather
+   * than starting a new one, so a single sitting reads as one play however many
+   * times it was interrupted. The log is capped: at a few hundred plays a week
+   * the oldest entries are worth less than the space they cost.
+   */
+  logListening(path, ms) {
+    if (!path || !(ms > 1000)) return;
+    const log = this.data.plays;
+    const last = log[log.length - 1];
+    const now = Date.now();
+
+    if (last && last.p === path && now - (last.t + last.ms) < RESUME_WINDOW_MS) {
+      last.ms += ms;
+    } else {
+      log.push({ p: path, t: now - ms, ms });
+    }
+
+    if (log.length > MAX_PLAY_LOG) log.splice(0, log.length - MAX_PLAY_LOG);
+    this.save();
+  }
+
+  get plays() {
+    return this.data.plays;
   }
 
   setResume(path, position) {
