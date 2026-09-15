@@ -62,9 +62,10 @@ const DEFAULTS = {
   lastPlayed: {},
   playlists: {},
   shuffle: false,
-  repeat: "off",
+  repeat: "all",
   resume: null,
   volume: 1,
+  loopDefaultApplied: false,
 };
 
 /**
@@ -75,6 +76,16 @@ const DEFAULTS = {
 export class Store {
   constructor(data) {
     this.data = { ...DEFAULTS, ...(data || {}) };
+
+    // Reaching the last track used to stop playback. Looping the queue is the
+    // expected behaviour and was asked for, so it is the default now. Installs
+    // still sitting on the old "off" default are moved across once — after that
+    // the repeat button is in charge, and picking "off" sticks.
+    if (!this.data.loopDefaultApplied) {
+      this.data.loopDefaultApplied = true;
+      if (this.data.repeat === "off") this.data.repeat = "all";
+      this.save();
+    }
   }
 
   static async load() {

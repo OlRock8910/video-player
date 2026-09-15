@@ -27,6 +27,7 @@ playback service instead.
 | Suggestions | — | A **For you** tab built from your own listening |
 | Playlists | One track at a time | Long-press to multi-select, then add or shuffle in bulk |
 | Other audio | Audio focus was requested | Unchanged, and now correct: pausing no longer loses the queue |
+| End of the queue | Playback stopped | Loops back to the first track; repeat still offers "off" |
 
 ### Building playlists
 

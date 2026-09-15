@@ -27,8 +27,19 @@ class Store(context: Context) {
 
     /** One of "off", "all", "one". */
     var repeat: String
-        get() = prefs.getString(KEY_REPEAT, "off") ?: "off"
+        get() = prefs.getString(KEY_REPEAT, "all") ?: "all"
         set(value) = prefs.edit().putString(KEY_REPEAT, value).apply()
+
+    init {
+        // Reaching the last track used to stop playback. Looping the queue is
+        // the expected behaviour and was asked for, so it is the default now.
+        // Installs still sitting on the old "off" default are moved across once
+        // — after that the repeat button is in charge, and picking "off" sticks.
+        if (!prefs.getBoolean(KEY_LOOP_DEFAULT_APPLIED, false)) {
+            prefs.edit().putBoolean(KEY_LOOP_DEFAULT_APPLIED, true).apply()
+            if (prefs.getString(KEY_REPEAT, "off") == "off") repeat = "all"
+        }
+    }
 
     // --- Likes -------------------------------------------------------------
     //
@@ -176,6 +187,7 @@ class Store(context: Context) {
         const val KEY_FOLDER = "folder_uri"
         const val KEY_SHUFFLE = "shuffle"
         const val KEY_REPEAT = "repeat"
+        const val KEY_LOOP_DEFAULT_APPLIED = "loop_default_applied"
         const val KEY_PLAYLISTS = "playlists"
         const val KEY_FAVORITES = "favorites"
         const val KEY_PLAY_COUNTS = "play_counts"
