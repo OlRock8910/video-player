@@ -51,9 +51,14 @@ There is no music service to ask, so suggestions come from the library itself:
 
 ## Installing
 
-CI builds an APK for every push. Open the latest run under
-**Actions → Build Mono APK**, download **Mono-apk** from the Artifacts section,
-and open the `.apk` on the phone.
+Every successful build publishes the APK to a rolling release, so the newest
+one is always at the same address — no GitHub account, no zip:
+
+**https://github.com/OlRock8910/video-player/releases/download/android-latest/Mono.apk**
+
+Open that on the phone and Android offers to install it. (The build's
+Artifacts section still carries the same file, but artifacts are zipped and
+only download for someone signed in to GitHub.)
 
 > **One-time step:** uninstall the old Mono first. Version 1 was signed with a
 > throwaway debug key that no longer exists, so Android will refuse to install

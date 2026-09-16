@@ -7,7 +7,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  # Needed to publish the APK as a release asset.
+  contents: write
 
 jobs:
   build-apk:
@@ -51,6 +52,26 @@ jobs:
           name: Mono-apk
           path: out/Mono.apk
           if-no-files-found: error
+
+      # Artifacts can only be downloaded by someone signed in to GitHub, and
+      # they arrive zipped — on a phone that is several confusing steps. A
+      # release asset is a plain file anyone can fetch with one tap, so the APK
+      # is also published to a rolling "android-latest" tag that always points
+      # at the newest successful build.
+      - name: Publish the APK as a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          version=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts)
+          tag="android-latest"
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" \
+            --title "Mono for Android (latest build)" \
+            --notes "Always the newest successful build of the Android app. Open Mono.apk on the phone to install; it upgrades over the previous version and keeps playlists, likes and history." \
+            --target "$GITHUB_SHA"
+          gh release upload "$tag" out/Mono.apk --clobber
+          gh release edit "$tag" --title "Mono $version for Android (latest build)"
+          echo "Direct link: https://github.com/$GITHUB_REPOSITORY/releases/download/$tag/Mono.apk"
 
       # Tests and lint run after the upload so a failure in either is loud, but
       # the APK from that same commit is still downloadable rather than lost
