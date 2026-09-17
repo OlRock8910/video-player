@@ -59,7 +59,10 @@ jobs:
       # is also published to a rolling "android-latest" tag that always points
       # at the newest successful build.
       - name: Publish the APK as a release
-        # A stalled upload used to hang here until the job's six-hour limit.
+        # Belt and braces, not a fix for an observed failure: without a
+        # deadline an upload that never returns would hold the job for six
+        # hours, and the release would sit there with no APK on it the whole
+        # time (see --clobber below).
         timeout-minutes: 15
         env:
           GH_TOKEN: ${{ github.token }}
@@ -73,10 +76,10 @@ jobs:
             --target "$GITHUB_SHA"
           gh release edit "$tag" --title "Mono $version for Android (latest build)"
 
-          # --clobber removes the old asset before sending the new one, so an
-          # upload that stalls leaves the release with no APK on it at all and
-          # the install link dead. An upload that stops making progress is cut
-          # short and tried again rather than waited on.
+          # --clobber removes the old asset before sending the new one, so
+          # while the upload is in flight the release carries no APK and the
+          # install link 404s. That window is normally a minute or two; the
+          # timeout keeps it from becoming open-ended.
           for attempt in 1 2 3 4; do
             if timeout 240 gh release upload "$tag" out/Mono.apk --clobber; then
               echo "Attached Mono.apk on attempt $attempt"
