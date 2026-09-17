@@ -94,6 +94,61 @@ class Store(context: Context) {
             .apply()
     }
 
+    // --- The play log --------------------------------------------------------
+    //
+    // Feeds the Stats tab. The counters above cannot answer "this week": they
+    // hold one total and one timestamp per track, so all history collapses into
+    // a single number. This is an append-only list of listening stretches
+    // instead — [{"p": docId, "t": started at, "ms": listened}, …].
+
+    fun plays(): List<Play> {
+        val array = JSONArray(prefs.getString(KEY_PLAYS, "[]") ?: "[]")
+        val out = ArrayList<Play>(array.length())
+        for (i in 0 until array.length()) {
+            val entry = array.optJSONObject(i) ?: continue
+            val docId = entry.optString("p", "")
+            if (docId.isEmpty()) continue
+            out.add(Play(docId, entry.optLong("t", 0L), entry.optLong("ms", 0L)))
+        }
+        return out
+    }
+
+    /**
+     * Records time actually spent listening to [docId].
+     *
+     * Pausing and coming back to the same track shortly after extends the last
+     * stretch rather than logging a second play — otherwise a track paused for a
+     * doorbell would count twice in "songs played".
+     */
+    fun logListening(docId: String, ms: Long) {
+        if (ms <= 1000L) return
+        val array = JSONArray(prefs.getString(KEY_PLAYS, "[]") ?: "[]")
+        val now = System.currentTimeMillis()
+        val last = if (array.length() > 0) array.optJSONObject(array.length() - 1) else null
+
+        if (last != null &&
+            last.optString("p") == docId &&
+            now - (last.optLong("t") + last.optLong("ms")) < RESUME_WINDOW_MS
+        ) {
+            last.put("ms", last.optLong("ms") + ms)
+            array.put(array.length() - 1, last)
+        } else {
+            array.put(JSONObject().put("p", docId).put("t", now - ms).put("ms", ms))
+        }
+
+        // The log is bounded so prefs cannot grow without limit. At a few plays
+        // an hour this holds years, and the oldest entries go first.
+        val trimmed = if (array.length() > MAX_PLAY_LOG) {
+            val kept = JSONArray()
+            for (i in array.length() - MAX_PLAY_LOG until array.length()) kept.put(array.get(i))
+            kept
+        } else {
+            array
+        }
+
+        prefs.edit().putString(KEY_PLAYS, trimmed.toString()).apply()
+    }
+
     private fun <T> readMap(key: String, parse: (String) -> T): Map<String, T> {
         val json = JSONObject(prefs.getString(key, "{}") ?: "{}")
         val out = mutableMapOf<String, T>()
@@ -194,5 +249,10 @@ class Store(context: Context) {
         const val KEY_LAST_PLAYED = "last_played"
         const val KEY_RESUME_DOC = "resume_doc"
         const val KEY_RESUME_POSITION = "resume_position"
+        const val KEY_PLAYS = "plays"
+
+        /** Resuming the same track within half an hour is the same play. */
+        const val RESUME_WINDOW_MS = 30 * 60 * 1000L
+        const val MAX_PLAY_LOG = 20_000
     }
 }

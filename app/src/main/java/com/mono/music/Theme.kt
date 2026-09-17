@@ -25,6 +25,13 @@ import androidx.core.view.WindowCompat
 object MonoColors {
     val Accent = Color(0xFFFF6A00)
 
+    /**
+     * Charts use a slightly deeper orange than the accent. The accent itself is
+     * too light against Mono's near-black page to hold the contrast a filled
+     * shape needs, where the accent only ever has to carry an icon or a word.
+     */
+    val Chart = Color(0xFFE55F00)
+
     val Paper = Color(0xFFF4F4F5)
     val Card = Color(0xFFFFFFFF)
     val Raised = Color(0xFFE9E9EC)

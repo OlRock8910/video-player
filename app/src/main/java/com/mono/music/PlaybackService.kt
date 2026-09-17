@@ -3,6 +3,9 @@ package com.mono.music
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -33,6 +36,16 @@ class PlaybackService : MediaSessionService() {
 
     /** docId of the track the current play has already been counted for. */
     private var countedDocId: String? = null
+
+    // Time listened is measured on the wall clock while audio is playing, which
+    // is not the same as track length (skipping through an album would otherwise
+    // bank the whole album) nor the same as the seek position (a seek to the end
+    // would too). elapsedRealtime is used for the deltas because it cannot jump
+    // when the system clock is corrected.
+    private var listeningDocId: String? = null
+    private var listeningSince = 0L
+    private var listenedMs = 0L
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate() {
         super.onCreate()
@@ -80,16 +93,28 @@ class PlaybackService : MediaSessionService() {
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             countedDocId = null
+            // Close the previous track's stretch before the new one opens, so
+            // its time is logged against the track that was actually playing.
+            flushListening()
             refreshLikeButton()
             recordPlayIfStarted()
+            startListening()
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            if (isPlaying) recordPlayIfStarted() else saveResumePoint()
+            if (isPlaying) {
+                recordPlayIfStarted()
+                startListening()
+            } else {
+                handler.removeCallbacks(logTicker)
+                flushListening()
+                saveResumePoint()
+            }
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             if (playbackState == Player.STATE_READY) recordPlayIfStarted()
+            if (playbackState == Player.STATE_ENDED) flushListening()
         }
     }
 
@@ -111,6 +136,42 @@ class PlaybackService : MediaSessionService() {
         val player = session?.player ?: return
         val docId = player.currentMediaItem?.mediaId ?: return
         store.saveResumePoint(docId, player.currentPosition)
+    }
+
+    // --- Time listened -------------------------------------------------------
+
+    /**
+     * Flushes on a slow cadence while audio plays, so the Stats screen counts a
+     * track that is still going rather than only finished ones. Flushing the
+     * same track repeatedly extends one log entry instead of adding plays, so
+     * the cadence costs nothing but a prefs write.
+     */
+    private val logTicker = Runnable { startListening() }
+
+    /** Opens a fresh stretch for whatever is playing now. */
+    private fun startListening() {
+        val player = session?.player ?: return
+        if (!player.isPlaying) return
+        val docId = player.currentMediaItem?.mediaId ?: return
+        // Bank whatever has accrued before opening the next stretch, whether it
+        // belongs to this track or the one before it.
+        flushListening()
+        listeningDocId = docId
+        listeningSince = SystemClock.elapsedRealtime()
+        handler.removeCallbacks(logTicker)
+        handler.postDelayed(logTicker, LOG_INTERVAL_MS)
+    }
+
+    /** Writes what has accrued to the log and starts fresh. */
+    private fun flushListening() {
+        if (listeningSince != 0L) {
+            listenedMs += SystemClock.elapsedRealtime() - listeningSince
+            listeningSince = 0L
+        }
+        val docId = listeningDocId
+        if (docId != null && listenedMs > 0L) store.logListening(docId, listenedMs)
+        listenedMs = 0L
+        listeningDocId = null
     }
 
     // --- The like button in the notification ---------------------------------
@@ -174,6 +235,8 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        handler.removeCallbacks(logTicker)
+        flushListening()
         saveResumePoint()
         favoritesWatcher?.let { store.stopWatching(it) }
         favoritesWatcher = null
@@ -188,5 +251,8 @@ class PlaybackService : MediaSessionService() {
 
     companion object {
         const val ACTION_TOGGLE_LIKE = "com.mono.music.TOGGLE_LIKE"
+
+        /** How often a still-playing track's time is written to the log. */
+        private const val LOG_INTERVAL_MS = 30_000L
     }
 }

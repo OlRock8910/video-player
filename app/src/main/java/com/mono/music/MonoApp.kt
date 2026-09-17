@@ -64,6 +64,7 @@ private enum class Tab(val label: String) {
     Songs("Songs"),
     Artists("Artists"),
     Playlists("Playlists"),
+    Stats("Stats"),
 }
 
 /** Name of the built-in likes playlist, kept out of the user's own names. */
@@ -175,7 +176,9 @@ fun MonoApp(activity: MainActivity, onPickFolder: () -> Unit) {
                         onPickFolder = onPickFolder,
                         onRescan = { activity.rescan() },
                     )
-                    SearchField(query, { query = it })
+                    // Nothing on the Stats tab is searchable, and a box that
+                    // does nothing when typed in is worse than no box.
+                    if (tab != Tab.Stats) SearchField(query, { query = it })
                     TabRow(
                         selected = tab,
                         onSelect = {
@@ -231,6 +234,8 @@ fun MonoApp(activity: MainActivity, onPickFolder: () -> Unit) {
                         )
 
                         tab == Tab.Artists -> ArtistsScreen(matching) { openArtist = it }
+
+                        tab == Tab.Stats -> StatsScreen(activity)
 
                         else -> PlaylistsScreen(
                             activity = activity,

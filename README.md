@@ -49,6 +49,20 @@ There is no music service to ask, so suggestions come from the library itself:
 - **Recently added** — newest files in the folder, by file date.
 - **Never played** — a handful you own but have not played, rotating daily.
 
+## Listening stats
+
+A **Stats** tab, in both builds: time listened, songs played, different tracks,
+days listened and a daily average, over Today / 7 days / 30 days / 12 months /
+all time, with a column chart of when you listened and your top five songs and
+artists. On the phone, tap a column to read its total.
+
+Time is counted on the wall clock **while audio is actually playing**, not by
+track length, so skipping through an album does not bank forty minutes. Pausing
+and resuming the same track stays one play. This needed a new append-only play
+log — the old counters recorded only a total and a last-played date per track,
+which cannot answer "this week". Only listening from this version onwards
+appears, since there was nothing keeping the detail before it.
+
 ## Installing
 
 Every successful build publishes the APK to a rolling release, so the newest
@@ -101,9 +115,9 @@ own storage on that machine.
 
 ### What works there
 
-Everything the phone app does — the four tabs, For you, likes, multi-select,
-playlists, shuffle and repeat, the turning record — plus the parts that only
-make sense on a desktop:
+Everything the phone app does — the five tabs, For you, Stats, likes,
+multi-select, playlists, shuffle and repeat, the turning record — plus the parts
+that only make sense on a desktop:
 
 - **Media keys** and the Windows media overlay, with cover art and track name.
 - **Keyboard**: space or `K` play/pause, `N`/`P` next and previous, `←`/`→` seek
@@ -111,18 +125,6 @@ make sense on a desktop:
   search, `Ctrl+A` select all while selecting, `Esc` to back out.
 - **Right-click** any track or playlist for its menu; `Ctrl`-click and
   `Shift`-click to build a selection.
-
-### Listening stats
-
-A **Stats** tab: time listened, songs played, different tracks, days listened and
-a daily average, over Today / 7 days / 30 days / 12 months / all time, with a
-column chart of when you listened and your top five songs and artists.
-
-Time is counted on the wall clock **while audio is actually playing**, not by
-track length, so skipping through an album does not bank forty minutes. Pausing
-and resuming the same track stays one play. This needed a new append-only play
-log — the old counters recorded only a total and a last-played date per track,
-which cannot answer "this week".
 
 ### Two limits worth knowing
 
@@ -172,9 +174,11 @@ only if the mark changes. Pushing to `web/` deploys to Pages automatically.
 | `MainActivity.kt` | Holds UI state, connects to the session, hands queues to the player |
 | `PlaybackService.kt` | The player itself: audio focus, the notification, the like button, play counts |
 | `Library.kt` | Walks the chosen folder, reads tags, `Song` |
-| `Store.kt` | SharedPreferences: folder, shuffle, repeat, playlists, likes, history |
+| `Store.kt` | SharedPreferences: folder, shuffle, repeat, playlists, likes, history, the play log |
 | `Art.kt` | Embedded cover extraction, disk cache, the session's `BitmapLoader` |
 | `Recommend.kt` | Builds the For you sections |
+| `Stats.kt` | Periods, bucketing and totals for the play log — no Android types, so it unit-tests |
+| `StatsScreen.kt` | The Stats tab: hero total, tiles, column chart, top fives |
 | `MonoApp.kt` | Library screens: search, tabs, lists, playlists |
 | `NowPlaying.kt` | The bar, the full player, the spinning record |
 | `Theme.kt` | Palette and type |
